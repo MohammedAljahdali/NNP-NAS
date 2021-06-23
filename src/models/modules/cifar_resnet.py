@@ -135,7 +135,16 @@ def resnet_factory(filters, num_classes, name):
         return model
     return _resnet
 
-
+def get_cifar_resnet(name, pretrained: bool):
+    _name2filters = {
+        'resnet20': [3, 3, 3],
+        'resnet32': [5, 5, 5],
+        'resnet44': [7, 7, 7],
+        'resnet56': [9, 9, 9],
+        'resnet110': [18, 18, 18],
+        'resnet1202': [200, 200, 200],
+    }
+    return resnet_factory(_name2filters[name], 10, name)(pretrained)
 resnet20 = resnet_factory([3, 3, 3], 10, 'resnet20')
 resnet32 = resnet_factory([5, 5, 5], 10, 'resnet32')
 resnet44 = resnet_factory([7, 7, 7], 10, 'resnet44')
