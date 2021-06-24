@@ -28,8 +28,6 @@ class ClassificationTraining(LightningModule):
 
     def __init__(
             self,
-            module,
-            optim,
             **kwargs
     ):
         super().__init__()
@@ -38,12 +36,12 @@ class ClassificationTraining(LightningModule):
         # it also allows to access params with 'self.hparams' attribute
         self.save_hyperparameters()
 
-        self.module = instantiate(self.hparams.module)
+        self.model = instantiate(self.hparams.module)
         print(f"\n\n\n---------{self.hparams.module._target_.split('.')[-1]}-------\n\n\n")
         if hasattr(torchvision.models, self.hparams.module._target_.split('.')[-1]):
             print(f"\n\n\n---------{self.hparams.module._target_.split('.')[-1]}-------\n\n\n")
             # https://pytorch.org/docs/stable/torchvision/models.html
-            mark_classifier(self.module)  # add is_classifier attribute
+            mark_classifier(self.model)  # add is_classifier attribute
         # Todo: Check if the model is compatible
 
         # loss function
@@ -59,7 +57,7 @@ class ClassificationTraining(LightningModule):
         self.test_accuracy5 = Accuracy(top_k=5)
 
     def forward(self, x: torch.Tensor):
-        return self.module(x)
+        return self.model(x)
 
     def step(self, batch: Any):
         x, y = batch
@@ -125,4 +123,4 @@ class ClassificationTraining(LightningModule):
         See examples here:
             https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
         """
-        return instantiate(self.hparams.optim, params=self.module.parameters(), _convert_="partial")
+        return instantiate(self.hparams.optim, params=self.model.parameters(), _convert_="partial")
