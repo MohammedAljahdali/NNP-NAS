@@ -14,7 +14,7 @@ def main(config: DictConfig):
     # Read more here: https://github.com/facebookresearch/hydra/issues/934
     from src.train import train
     from src.utils import utils
-    from src.prune import prune
+    # from src.prune import prune
 
     # A couple of optional utilities:
     # - disabling python warnings
@@ -30,8 +30,8 @@ def main(config: DictConfig):
     if not config.prune:
         # Train model
         return train(config)
-    else:
-        return prune(config)
+    # else:
+    #     return prune(config)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,9 @@ import torch
 from pytorch_lightning import LightningModule
 from torchmetrics.classification.accuracy import Accuracy
 from hydra.utils import instantiate
+import torchvision
+from src.models.modules.head import mark_classifier
+import torch.nn.functional as F
 
 
 class ClassificationTraining(LightningModule):
@@ -34,6 +37,11 @@ class ClassificationTraining(LightningModule):
         self.save_hyperparameters()
 
         self.model = instantiate(self.hparams.module)
+        print(f"\n\n\n---------{self.hparams.module._target_.split('.')[-1]}-------\n\n\n")
+        if hasattr(torchvision.models, self.hparams.module._target_.split('.')[-1]):
+            print(f"\n\n\n---------{self.hparams.module._target_.split('.')[-1]}-------\n\n\n")
+            # https://pytorch.org/docs/stable/torchvision/models.html
+            mark_classifier(self.model)  # add is_classifier attribute
         # Todo: Check if the model is compatible
 
         # loss function
@@ -56,14 +64,15 @@ class ClassificationTraining(LightningModule):
         logits = self.forward(x)
         loss = self.criterion(logits, y)
         preds = torch.argmax(logits, dim=1)
-        return loss, preds, y
+        logits = F.softmax(logits)
+        return loss, logits, preds, y
 
     def training_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
+        loss, logits, preds, targets = self.step(batch)
 
         # log train metrics
-        acc = self.train_accuracy(preds, targets)
-        acc5 = self.train_accuracy5(preds, targets)
+        acc = self.train_accuracy(logits, targets)
+        acc5 = self.train_accuracy5(logits, targets)
         self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
         self.log("train/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
         self.log("train/acc5", acc5, on_step=False, on_epoch=True, prog_bar=True)
@@ -78,11 +87,11 @@ class ClassificationTraining(LightningModule):
         pass
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
+        loss, logits, preds, targets = self.step(batch)
 
         # log val metrics
-        acc = self.val_accuracy(preds, targets)
-        acc5 = self.val_accuracy5(preds, targets)
+        acc = self.val_accuracy(logits, targets)
+        acc5 = self.val_accuracy5(logits, targets)
         self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
         self.log("val/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc5", acc5, on_step=False, on_epoch=True, prog_bar=True)
@@ -93,11 +102,11 @@ class ClassificationTraining(LightningModule):
         pass
 
     def test_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
+        loss, logits, preds, targets = self.step(batch)
 
         # log test metrics
-        acc = self.test_accuracy(preds, targets)
-        acc5 = self.test_accuracy5(preds, targets)
+        acc = self.test_accuracy(logits, targets)
+        acc5 = self.test_accuracy5(logits, targets)
         self.log("test/loss", loss, on_step=False, on_epoch=True)
         self.log("test/acc", acc, on_step=False, on_epoch=True)
         self.log("test/acc5", acc5, on_step=False, on_epoch=True)
@@ -114,4 +123,4 @@ class ClassificationTraining(LightningModule):
         See examples here:
             https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
         """
-        return instantiate(self.hparams.optim)
+        return instantiate(self.hparams.optim, params=self.model.parameters(), _convert_="partial")

@@ -33,12 +33,12 @@ def train(config: DictConfig) -> Optional[float]:
 
     # Init Lightning datamodule
     log.info(f"Instantiating datamodule <{config.datamodule._target_}>")
-    datamodule: LightningDataModule = hydra.utils.instantiate(config.datamodule)
+    datamodule: LightningDataModule = hydra.utils.instantiate(config.datamodule, dataset=config.dataset, _recursive_=False,)
 
     # Init Lightning model
     log.info(f"Instantiating model <{config.model._target_}> with <{config.optim._target_}> optimizer")
     model: LightningModule = hydra.utils.instantiate(
-        config.model, optim_config=config.optim, module_config=config.module
+        config.model, optim=config.optim, module=config.module, _recursive_=False,
     )
 
     # Init Lightning callbacks

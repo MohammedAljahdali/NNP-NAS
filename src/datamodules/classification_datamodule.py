@@ -8,6 +8,10 @@ from torchvision.transforms import transforms
 
 from src.datamodules.datasets import dataset_utils
 
+from src.utils import utils
+
+log = utils.get_logger(__name__)
+
 
 class ClassificationDataModule(LightningDataModule):
     """
@@ -41,10 +45,10 @@ class ClassificationDataModule(LightningDataModule):
         self.pin_memory = pin_memory
 
         self.dataset = kwargs['dataset']
+        print(self.dataset)
 
-        self.data_train: Optional[Dataset] = None
-        self.data_val: Optional[Dataset] = None
-        self.data_test: Optional[Dataset] = None
+        self.trainset: Optional[Dataset] = None
+        self.valset: Optional[Dataset] = None
 
     @property
     def num_classes(self) -> int:
@@ -53,6 +57,7 @@ class ClassificationDataModule(LightningDataModule):
     def prepare_data(self):
         """Download data if needed. This method is called only from a single GPU.
         Do not use it to assign state (self.x = y)."""
+        log.info("Preparing the Data!")
         if "download" in self.dataset:
             instantiate(self.dataset.train_dataset)
             instantiate(self.dataset.val_dataset)
@@ -63,7 +68,7 @@ class ClassificationDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: self.data_train, self.data_val, self.data_test."""
-
+        log.info("Data Setup!")
         self.trainset = instantiate(self.dataset.train_dataset)
         self.valset = instantiate(self.dataset.val_dataset)
         # dataset = ConcatDataset(datasets=[trainset, testset])
