@@ -11,6 +11,7 @@ from src.models.modules.head import mark_classifier
 import torch.nn.functional as F
 from .classification_training import ClassificationTraining
 from hydra.utils import instantiate
+from src.metrics import model_size, flops
 
 
 class ClassificationPruning(ClassificationTraining):
@@ -42,5 +43,24 @@ class ClassificationPruning(ClassificationTraining):
         x, y = next(iter(self.trainer.datamodule.train_dataloader()))
         self.pruning = instantiate(self.hparams.strategy, model=self.module, inputs=x, outputs=y)
         self.pruning.apply()
-        # TODO log pruning metrics
+        # This assumes that the logger is wandb
+        # TODO: Make it general to support multiple loggers
+        expr = self.logger.experiment[0]
+        print(expr)
+        metrics = {}
+        # Model Size
+        size, size_nz = model_size(self.module)
+        expr.summary['prune/size'] = size
+        expr.summary['prune/size_nz'] = size_nz
+        expr.summary['prune/compression_ratio'] = size / size_nz
 
+        # FLOPS
+        ops, ops_nz = flops(self.module, x)
+        expr.summary['prune/flops'] = ops
+        expr.summary['prune/flops_nz'] = ops_nz
+        expr.summary['prune/theoretical_speedup'] = ops / ops_nz
+
+        results = self.trainer.validate(model=self,datamodule=self.trainer.datamodule)
+        print(f"\n\n\n------\n{results}\n-------\n\n\n")
+        for k, v in results[0].items():
+            expr.summary['prune/'+k.split('/')[1]] = v
