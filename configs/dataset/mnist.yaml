@@ -1,6 +1,6 @@
 #root: str, train: bool = True, transform: Optional[Callable] = None, target_transform: Optional[Callable] = None, download: bool = False
 target: torchvision.datasets.MNIST
-root: /tmp/data
+root: ${work_dir}/tmp/data
 transform:
   _target_: torchvision.transforms.Compose
   transforms:
