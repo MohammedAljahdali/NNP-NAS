@@ -1,2 +1,3 @@
-_target_: src.models.classification_training.ClassificationTraining
+_target_: src.models.classification_pruning.ClassificationPruning
+strategy: ${strategy}
 
