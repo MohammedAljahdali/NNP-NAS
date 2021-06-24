@@ -59,6 +59,8 @@ def train(config: DictConfig) -> Optional[float]:
 
     # Init Lightning trainer
     log.info(f"Instantiating trainer <{config.trainer._target_}>")
+    if config.strategy.compression <= 1:
+        config.trainer.max_epochs = 0
     trainer: Trainer = hydra.utils.instantiate(
         config.trainer, callbacks=callbacks, logger=logger, _convert_="partial"
     )
@@ -78,10 +80,10 @@ def train(config: DictConfig) -> Optional[float]:
     log.info("Starting training!")
     trainer.fit(model=model, datamodule=datamodule)
 
-    # Evaluate model on test set after training
-    if not config.trainer.get("fast_dev_run"):
-        log.info("Starting testing!")
-        trainer.test()
+    # # Evaluate model on test set after training
+    # if not config.trainer.get("fast_dev_run"):
+    #     log.info("Starting testing!")
+    #     trainer.test()
 
     # Make sure everything closed properly
     log.info("Finalizing!")
