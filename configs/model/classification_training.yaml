@@ -1,2 +1,2 @@
-_target_: src.models.classifier.ClassificationTraining
+_target_: src.models.classification_training.ClassificationTraining
 
