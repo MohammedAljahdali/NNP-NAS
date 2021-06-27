@@ -40,6 +40,8 @@ class ClassificationPruning(ClassificationTraining):
 
 
     def on_fit_start(self):
+        if self.training:
+            return
         x, y = next(iter(self.trainer.datamodule.train_dataloader()))
         self.pruning = instantiate(self.hparams.strategy, model=self.module, inputs=x, outputs=y)
         self.pruning.apply()
@@ -59,7 +61,6 @@ class ClassificationPruning(ClassificationTraining):
         expr.summary['prune/flops'] = ops
         expr.summary['prune/flops_nz'] = ops_nz
         expr.summary['prune/theoretical_speedup'] = ops / ops_nz
-
         results = self.trainer.validate(model=self,datamodule=self.trainer.datamodule)
         print(f"\n\n\n------\n{results}\n-------\n\n\n")
         for k, v in results[0].items():
