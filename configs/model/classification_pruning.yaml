@@ -1,3 +1,6 @@
+defaults:
+  - default-pruning.yaml
+
 _target_: src.models.classification_pruning.ClassificationPruning
 strategy: ${strategy}
 
