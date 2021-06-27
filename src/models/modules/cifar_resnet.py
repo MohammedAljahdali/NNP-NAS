@@ -30,7 +30,6 @@ Reference:
 If you use this implementation in you work, please don't forget to mention the
 author, Yerlan Idelbayev.
 '''
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
@@ -73,11 +72,12 @@ class BasicBlock(nn.Module):
                 For CIFAR10 ResNet paper uses option A.
                 """
                 self.shortcut = LambdaLayer(lambda x:
-                                            F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, planes//4, planes//4), "constant", 0))
+                                            F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, planes // 4, planes // 4), "constant",
+                                                  0))
             elif option == 'B':
                 self.shortcut = nn.Sequential(
-                     nn.Conv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False),
-                     nn.BatchNorm2d(self.expansion * planes)
+                    nn.Conv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False),
+                    nn.BatchNorm2d(self.expansion * planes)
                 )
 
     def forward(self, x):
@@ -99,11 +99,11 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
         self.linear = nn.Linear(64, num_classes)
-        self.linear.is_classifier = True    # So layer is not pruned
+        self.linear.is_classifier = True  # So layer is not pruned
         self.apply(_weights_init)
 
     def _make_layer(self, block, planes, num_blocks, stride):
-        strides = [stride] + [1]*(num_blocks-1)
+        strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
             layers.append(block(self.in_planes, planes, stride))
@@ -133,9 +133,11 @@ def resnet_factory(filters, num_classes, name):
                 weights = {k[len("module."):]: v for k, v in weights.items()}
             model.load_state_dict(weights)
         return model
+
     return _resnet
 
-def get_cifar_resnet(name, pretrained: bool):
+
+def get_cifar_resnet(name: str, pretrained: bool, num_classes: int):
     _name2filters = {
         'resnet20': [3, 3, 3],
         'resnet32': [5, 5, 5],
@@ -144,11 +146,12 @@ def get_cifar_resnet(name, pretrained: bool):
         'resnet110': [18, 18, 18],
         'resnet1202': [200, 200, 200],
     }
-    return resnet_factory(_name2filters[name], 10, name)(pretrained)
+    return resnet_factory(_name2filters[name], num_classes, name)(pretrained)
+
+
 resnet20 = resnet_factory([3, 3, 3], 10, 'resnet20')
 resnet32 = resnet_factory([5, 5, 5], 10, 'resnet32')
 resnet44 = resnet_factory([7, 7, 7], 10, 'resnet44')
 resnet56 = resnet_factory([9, 9, 9], 10, 'resnet56')
 resnet110 = resnet_factory([18, 18, 18], 10, 'resnet110')
 resnet1202 = resnet_factory([200, 200, 200], 10, 'resnet1202')
-
