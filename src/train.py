@@ -61,6 +61,7 @@ def train(config: DictConfig) -> Optional[float]:
 
 
     # Init Lightning trainer for training
+    # TODO: Find a way to include all experiments runs in one expr
     if config.model.training:
         log.info(f"Instantiating  for training <{config.trainer._target_}>")
         trainer: Trainer = hydra.utils.instantiate(
@@ -126,7 +127,7 @@ def train(config: DictConfig) -> Optional[float]:
                 callbacks=callbacks,
                 logger=logger,
             )
-        log.info("Starting training!")
+        log.info("Start pruning!")
         trainer.fit(model=model, datamodule=datamodule)
 
 

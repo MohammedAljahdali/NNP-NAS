@@ -30,6 +30,8 @@ class ClassificationTraining(LightningModule):
             self,
             module,
             optim,
+            training,
+            pruning,
             **kwargs
     ):
         super().__init__()

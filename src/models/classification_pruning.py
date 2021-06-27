@@ -34,13 +34,15 @@ class ClassificationPruning(ClassificationTraining):
             module,
             optim,
             strategy,
+            training,
+            pruning,
             **kwargs
     ):
-        super().__init__(module=module, optim=optim, strategy=strategy)
+        super().__init__(module=module, optim=optim, strategy=strategy, training=training, pruning=pruning)
 
 
     def on_fit_start(self):
-        if self.training:
+        if self.hparams.training:
             return
         x, y = next(iter(self.trainer.datamodule.train_dataloader()))
         self.pruning = instantiate(self.hparams.strategy, model=self.module, inputs=x, outputs=y)

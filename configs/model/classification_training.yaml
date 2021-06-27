@@ -1,5 +1,3 @@
-defaults:
-  - default-training.yaml
-
 _target_: src.models.classification_training.ClassificationTraining
-
+training: True
+pruning: False
