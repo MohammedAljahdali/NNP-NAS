@@ -24,11 +24,14 @@ conda activate sb-env
 # NVDASHBOARD_PID=$!
 
 mkdir /tmp/pruning_data
+# mkdir /tmp/pruning_runs
 
 # launch the training script
 python "$@"
 
+# cp -r /tmp/pruning_runs /home/aljahdmk/project/shrinkbench/runs
 rm -r /tmp/pruning_data
+# rm -r /tmp/pruning_runs
 
 # shutdown the NVDashboard server
 # kill $NVDASHBOARD_PID

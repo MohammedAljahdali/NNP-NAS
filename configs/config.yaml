@@ -43,4 +43,4 @@ print_config: True
 ignore_warnings: True
 
 # specify job
-prune: False
+dir: .

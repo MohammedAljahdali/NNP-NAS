@@ -27,11 +27,7 @@ def main(config: DictConfig):
     # Pretty print config using Rich library
     if config.get("print_config"):
         utils.print_config(config, resolve=True)
-    if not config.prune:
-        # Train model
-        return train(config)
-    # else:
-    #     return prune(config)
+    return train(config)
 
 
 if __name__ == "__main__":
