@@ -108,7 +108,15 @@ def train(config: DictConfig) -> Optional[float]:
                         logger.append(hydra.utils.instantiate(lg_conf))
             log.info(f"Loading best checkpoint: {trainer.checkpoint_callback.best_model_path}")
             model = utils.import_string(config.model._target_).load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
-            model.training = False
+            model.hparams.training = False
+
+            # Init Lightning callbacks
+            callbacks: List[Callback] = []
+            if "callbacks" in config:
+                for _, cb_conf in config["callbacks"].items():
+                    if "_target_" in cb_conf:
+                        log.info(f"Instantiating callback <{cb_conf._target_}>")
+                        callbacks.append(hydra.utils.instantiate(cb_conf))
 
         log.info(f"Instantiating for pruning and fine-tuning <{config.trainer._target_}>")
         if config.model.strategy.compression <= 1:
