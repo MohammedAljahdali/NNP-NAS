@@ -32,6 +32,7 @@ class ClassificationTraining(LightningModule):
             optim,
             training,
             pruning,
+            run_id=None,
             **kwargs
     ):
         super().__init__()
@@ -41,7 +42,6 @@ class ClassificationTraining(LightningModule):
         self.save_hyperparameters()
 
         self.module = instantiate(self.hparams.module)
-        print(f"\n\n\n---------{self.hparams.module._target_.split('.')[-1]}-------\n\n\n")
         if hasattr(torchvision.models, self.hparams.module._target_.split('.')[-1]):
             print(f"\n\n\n---------{self.hparams.module._target_.split('.')[-1]}-------\n\n\n")
             # https://pytorch.org/docs/stable/torchvision/models.html
@@ -74,12 +74,13 @@ class ClassificationTraining(LightningModule):
     def training_step(self, batch: Any, batch_idx: int):
         loss, logits, preds, targets = self.step(batch)
 
+        run_id = self.hparams.run_id + '/train' if self.hparams.run_id else 'train'
         # log train metrics
         acc = self.train_accuracy(logits, targets)
         acc5 = self.train_accuracy5(logits, targets)
-        self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("train/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train/acc5", acc5, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"{run_id}/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
+        self.log(f"{run_id}/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"{run_id}/acc5", acc5, on_step=False, on_epoch=True, prog_bar=True)
 
         # we can return here dict with any tensors
         # and then read it in some callback or in training_epoch_end() below
@@ -93,12 +94,13 @@ class ClassificationTraining(LightningModule):
     def validation_step(self, batch: Any, batch_idx: int):
         loss, logits, preds, targets = self.step(batch)
 
+        run_id = self.hparams.run_id + '/val' if self.hparams.run_id else 'val'
         # log val metrics
         acc = self.val_accuracy(logits, targets)
         acc5 = self.val_accuracy5(logits, targets)
-        self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("val/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val/acc5", acc5, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"{run_id}/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
+        self.log(f"{run_id}/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"{run_id}/acc5", acc5, on_step=False, on_epoch=True, prog_bar=True)
 
         return {"loss": loss, "preds": preds, "targets": targets}
 
