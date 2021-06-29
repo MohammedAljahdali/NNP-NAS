@@ -34,6 +34,7 @@ class MyModelPruning(ModelPruning):
         self.x: Optional[torch.T] = None
 
     def filter_parameters_to_prune(self, parameters_to_prune: Optional[_PARAM_LIST] = None):
+        log.debug(parameters_to_prune)
         return [module for module in parameters_to_prune if self.can_prune(module[0])]
 
     def can_prune(self, module):
@@ -56,7 +57,7 @@ class MyModelPruning(ModelPruning):
         self.level = pl_module.hparams.run_id.split('-')[-1]
         log.info(f'\n\n\n---- on fit end ----- \n\n\n')
         amount = 1
-        log.info(self.level)
+        log.info(f"Pruning Level f{self.level}")
         for _ in range(int(self.level)+1):
             amount *= 0.5
 
@@ -64,12 +65,13 @@ class MyModelPruning(ModelPruning):
         self.logger = pl_module.logger
         self.module = pl_module.module
         self.x, y = next(iter(trainer.datamodule.train_dataloader()))
-
-        log.info([self._get_pruned_stats(m, n) for m, n in self._parameters_to_prune])
-
+        log.debug("BEFORE")
+        log.debug([self._get_pruned_stats(m, n) for m, n in self._parameters_to_prune])
+        log.debug("END OF BEFORE")
         self.apply_pruning(amount)
-
-        log.info([self._get_pruned_stats(m, n) for m, n in self._parameters_to_prune])
+        log.debug("AFTER")
+        log.debug([self._get_pruned_stats(m, n) for m, n in self._parameters_to_prune])
+        log.debug("END OF AFTER")
 
         if (
                 self._use_lottery_ticket_hypothesis(current_epoch)
@@ -77,9 +79,6 @@ class MyModelPruning(ModelPruning):
         ):
             log.info("Rested the Parameters")
             self.apply_lottery_ticket_hypothesis()
-            # for m in list(self.module.named_buffers()):
-            #     log.info(m[-1])
-            #     break
 
     @rank_zero_only
     def _log_sparsity_stats(
@@ -190,7 +189,7 @@ def lth(config: DictConfig) -> Optional[float]:
 
     pruning_callback = MyModelPruning(
         apply_pruning=True, use_lottery_ticket_hypothesis=True,
-        pruning_fn='l1_unstructured', use_global_unstructured=True, verbose=1
+        pruning_fn='l1_unstructured', use_global_unstructured=True, verbose=1, make_pruning_permanent=False
     )
     callbacks.append(pruning_callback)
 
