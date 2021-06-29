@@ -36,6 +36,7 @@ class ClassificationDataModule(LightningDataModule):
         batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
+        prefetch_factor: int = 2,
         **kwargs,
     ):
         super().__init__()
@@ -43,6 +44,7 @@ class ClassificationDataModule(LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.pin_memory = pin_memory
+        self.prefetch_factor = prefetch_factor
 
         self.dataset = kwargs['dataset']
         print(self.dataset)
@@ -82,6 +84,7 @@ class ClassificationDataModule(LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
+            prefetch_factor=self.prefetch_factor,
             shuffle=True,
         )
 
@@ -91,6 +94,7 @@ class ClassificationDataModule(LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
+            prefetch_factor=self.prefetch_factor,
             shuffle=False,
         )
 

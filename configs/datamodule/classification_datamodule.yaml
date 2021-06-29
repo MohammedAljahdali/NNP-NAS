@@ -2,3 +2,4 @@ _target_: src.datamodules.classification_datamodule.ClassificationDataModule
 batch_size: 64
 num_workers: 0
 pin_memory: False
+prefetch_factor: 2
