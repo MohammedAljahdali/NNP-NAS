@@ -220,6 +220,9 @@ def lth(config: DictConfig) -> Optional[float]:
         logger=logger,
     )
 
+    log.debug("MODEL PARAMETERS LEVEL 0")
+    log.debug(list(model.module.parameters())[5:7])
+
     log.info("Starting training level 0!")
     trainer.fit(model=model, datamodule=datamodule)
     print(f'\n\n\n----{early_stopping_callback.stopped_epoch}----- \n\n\n')
@@ -248,6 +251,10 @@ def lth(config: DictConfig) -> Optional[float]:
         trainer: Trainer = hydra.utils.instantiate(
             config.trainer, callbacks=callbacks, logger=logger, _convert_="partial"
         )
+
+        log.debug(f"MODEL PARAMETERS LEVEL {i}")
+        log.debug(list(model.module.parameters())[5:7])
+
         log.info(f"Starting training level {i}!")
         trainer.fit(model=model, datamodule=datamodule)
 

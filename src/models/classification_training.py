@@ -130,3 +130,7 @@ class ClassificationTraining(LightningModule):
             https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
         """
         return instantiate(self.hparams.optim, params=self.module.parameters(), _convert_="partial")
+
+    def on_fit_end(self) -> None:
+        expr = self.logger.experiment[0]
+        expr.summary[f"{self.hparams.run_id}/best_score"] = self.trainer.checkpoint_callback.best_model_score
