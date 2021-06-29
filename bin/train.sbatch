@@ -4,7 +4,7 @@
 #SBATCH -J test_pruning
 #SBATCH -o test_pruning.%J.out
 #SBATCH -e test_pruning.%J.err
-#SBATCH --time=01:30:00
+#SBATCH --time=05:30:00
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=6
