@@ -48,3 +48,4 @@ dir: .
 lth:
   N: 4
   use: False
+  amount: 0.5

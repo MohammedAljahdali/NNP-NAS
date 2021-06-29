@@ -56,10 +56,10 @@ class MyModelPruning(ModelPruning):
             return
         self.level = pl_module.hparams.run_id.split('-')[-1]
         log.info(f'\n\n\n---- on fit end ----- \n\n\n')
-        amount = 1
+        # amount = 1
         log.info(f"Pruning Level f{self.level}")
-        for _ in range(int(self.level)+1):
-            amount *= 0.5
+        # for _ in range(int(self.level)+1):
+        #     amount *= 0.5
 
         # TODO: Make it general to support multiple loggers
         self.logger = pl_module.logger
@@ -189,7 +189,8 @@ def lth(config: DictConfig) -> Optional[float]:
 
     pruning_callback = MyModelPruning(
         apply_pruning=True, use_lottery_ticket_hypothesis=True,
-        pruning_fn='l1_unstructured', use_global_unstructured=True, verbose=1, make_pruning_permanent=False
+        pruning_fn='l1_unstructured', use_global_unstructured=True, verbose=1, make_pruning_permanent=False,
+        amount=config.lth.amount
     )
     callbacks.append(pruning_callback)
 
