@@ -14,6 +14,7 @@ def main(config: DictConfig):
     # Read more here: https://github.com/facebookresearch/hydra/issues/934
     from src.train import train
     from src.utils import utils
+    from src.lth import lth
     # from src.prune import prune
 
     # A couple of optional utilities:
@@ -27,6 +28,8 @@ def main(config: DictConfig):
     # Pretty print config using Rich library
     if config.get("print_config"):
         utils.print_config(config, resolve=True)
+    if config.lth.use:
+        return lth(config)
     return train(config)
 
 
