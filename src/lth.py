@@ -1,6 +1,8 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import hydra
+import pytorch_lightning
+import torch
 from omegaconf import DictConfig
 from pytorch_lightning import (
     Callback,
@@ -13,13 +15,25 @@ from pytorch_lightning.loggers import LightningLoggerBase
 from pytorch_lightning.callbacks import ModelPruning, EarlyStopping, ModelCheckpoint
 import functools
 from src.utils import utils
+from pytorch_lightning.utilities.distributed import rank_zero_only
+from torch import nn
+from src.metrics import model_size, flops
+_PARAM_TUPLE = Tuple[nn.Module, str]
+_PARAM_LIST = Union[List[_PARAM_TUPLE], Tuple[_PARAM_TUPLE]]
 
 log = utils.get_logger(__name__)
 
 
 class MyModelPruning(ModelPruning):
 
-    def filter_parameters_to_prune(self, parameters_to_prune):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.level = ''
+        self.logger: Optional[LightningLoggerBase] = None
+        self.module: Optional[nn.Module] = None
+        self.x: Optional[torch.T] = None
+
+    def filter_parameters_to_prune(self, parameters_to_prune: Optional[_PARAM_LIST] = None):
         return [module for module in parameters_to_prune if self.can_prune(module[0])]
 
     def can_prune(self, module):
@@ -27,20 +41,79 @@ class MyModelPruning(ModelPruning):
             return not module.is_classifier
         return True
 
+    def on_train_epoch_end(self, trainer, pl_module: LightningModule):
+        pass
+
     def on_fit_end(self, trainer, pl_module):
-        print(f'\n\n\n---- On Fit End Here ----- \n\n\n')
+
         current_epoch = trainer.current_epoch
+
+
         prune = self._apply_pruning(current_epoch) if isinstance(self._apply_pruning, Callable) else self._apply_pruning
         amount = self.amount(current_epoch) if isinstance(self.amount, Callable) else self.amount
         if not prune or not amount:
             return
+        self.level = pl_module.hparams.run_id.split('-')[-1]
+        log.info(f'\n\n\n---- on fit end ----- \n\n\n')
+        amount = 1
+        log.info(self.level)
+        for _ in range(int(self.level)+1):
+            amount *= 0.5
+
+        # TODO: Make it general to support multiple loggers
+        self.logger = pl_module.logger
+        self.module = pl_module.module
+        self.x, y = next(iter(trainer.datamodule.train_dataloader()))
+
+        log.info([self._get_pruned_stats(m, n) for m, n in self._parameters_to_prune])
+
         self.apply_pruning(amount)
 
+        log.info([self._get_pruned_stats(m, n) for m, n in self._parameters_to_prune])
+
         if (
-            self._use_lottery_ticket_hypothesis(current_epoch)
-            if isinstance(self._use_lottery_ticket_hypothesis, Callable) else self._use_lottery_ticket_hypothesis
+                self._use_lottery_ticket_hypothesis(current_epoch)
+                if isinstance(self._use_lottery_ticket_hypothesis, Callable) else self._use_lottery_ticket_hypothesis
         ):
+            log.info("Rested the Parameters")
             self.apply_lottery_ticket_hypothesis()
+            # for m in list(self.module.named_buffers()):
+            #     log.info(m[-1])
+            #     break
+
+    @rank_zero_only
+    def _log_sparsity_stats(
+            self, prev: List[Tuple[int, int]], curr: List[Tuple[int, int]], amount: Union[int, float] = 0
+    ):
+        total_params = sum(p.numel() for layer, _ in self._parameters_to_prune for p in layer.parameters())
+        prev_total_zeros = sum(zeros for zeros, _ in prev)
+        curr_total_zeros = sum(zeros for zeros, _ in curr)
+        log.info(
+            f"Applied `{self._pruning_fn_name}`. Pruned:"
+            f" {prev_total_zeros}/{total_params} ({prev_total_zeros / total_params:.2%}) ->"
+            f" {curr_total_zeros}/{total_params} ({curr_total_zeros / total_params:.2%})"
+        )
+        self.logger.experiment[0].summary[f"level-{self.level}/prev_size"] = total_params - prev_total_zeros
+        self.logger.experiment[0].summary[f"level-{self.level}/size"] = total_params - curr_total_zeros
+        self.logger.experiment[0].summary[f"level-{self.level}/pruned"] = curr_total_zeros / total_params
+
+        self.logger.experiment[0].summary[f"level-{self.level}/compression_ratio"] = total_params / (total_params - curr_total_zeros)
+
+        # FLOPS
+        ops, ops_nz = flops(self.module, self.x)
+        self.logger.experiment[0].summary[f"level-{self.level}/flops"] = ops
+        self.logger.experiment[0].summary[f"level-{self.level}/flops_nz"] = ops_nz
+        self.logger.experiment[0].summary[f"level-{self.level}/theoretical_speedup"] = ops / ops_nz
+
+        if self._verbose == 2:
+            for i, (module, name) in enumerate(self._parameters_to_prune):
+                prev_mask_zeros, prev_mask_size = prev[i]
+                curr_mask_zeros, curr_mask_size = curr[i]
+                log.info(
+                    f"Applied `{self._pruning_fn_name}` to `{module!r}.{name}` with amount={amount}. Pruned:"
+                    f" {prev_mask_zeros} ({prev_mask_zeros / prev_mask_size:.2%}) ->"
+                    f" {curr_mask_zeros} ({curr_mask_zeros / curr_mask_size:.2%})"
+                )
 
 
 def lth(config: DictConfig) -> Optional[float]:
@@ -116,7 +189,7 @@ def lth(config: DictConfig) -> Optional[float]:
     )
 
     pruning_callback = MyModelPruning(
-        apply_pruning=pruning_callable, use_lottery_ticket_hypothesis=pruning_callable,
+        apply_pruning=True, use_lottery_ticket_hypothesis=True,
         pruning_fn='l1_unstructured', use_global_unstructured=True, verbose=1
     )
     callbacks.append(pruning_callback)
@@ -161,6 +234,7 @@ def lth(config: DictConfig) -> Optional[float]:
                 if "_target_" in cb_conf:
                     log.info(f"Instantiating callback <{cb_conf._target_}>")
                     callbacks.append(hydra.utils.instantiate(cb_conf))
+        callbacks.append(pruning_callback)
         # Change monitor value
         model.hparams.run_id = f"level-{i}"
         # Update the monitored value name
