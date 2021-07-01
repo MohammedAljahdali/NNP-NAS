@@ -1,0 +1,5 @@
+cifar_resnet:
+  _target_: src.models.modules.cifar_resnet.get_cifar_resnet
+  name: resnet20
+  pretrained: True
+  num_classes: 10 # Should be either 10 or 100

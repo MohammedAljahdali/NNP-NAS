@@ -1,0 +1,2 @@
+mnist_net:
+  _target_: src.models.modules.mnistnet.MnistNet
