@@ -13,8 +13,8 @@ defaults:
   - override /model: classification_training.yaml
   - override /model/module: cifar_resnet
   - override /callbacks: default.yaml
-  - override /logger: wandb
-  - override /dataset: cifar10
+  - override /logger: wandb.yaml
+  - override /dataset: cifar10.yaml
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters

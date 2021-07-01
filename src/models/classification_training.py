@@ -45,7 +45,7 @@ class ClassificationTraining(LightningModule):
         self.test_counter = 0
 
         self.module = instantiate(next(iter(self.hparams.module.values())))
-
+        print(self.module)
         if hasattr(torchvision.models, next(iter(self.hparams.module.values()))._target_.split('.')[-1]):
             print(f"\n\n\n---------{self.hparams.module._target_.split('.')[-1]}-------\n\n\n")
             # https://pytorch.org/docs/stable/torchvision/models.html
@@ -80,8 +80,14 @@ class ClassificationTraining(LightningModule):
 
         run_id = self.hparams.run_id + '/train' if self.hparams.run_id else 'train'
         # log train metrics
-        acc = self.train_accuracy(logits, targets)
-        acc5 = self.train_accuracy5(logits, targets)
+        try:
+            acc = self.train_accuracy(logits, targets)
+        except:
+            acc = 0
+        try:
+            acc5 = self.train_accuracy5(logits, targets)
+        except:
+            acc5 = 0
         self.log(f"{run_id}/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
         self.log(f"{run_id}/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
         self.log(f"{run_id}/acc5", acc5, on_step=False, on_epoch=True, prog_bar=True)
@@ -100,8 +106,14 @@ class ClassificationTraining(LightningModule):
 
         run_id = self.hparams.run_id + '/val' if self.hparams.run_id else 'val'
         # log val metrics
-        acc = self.val_accuracy(logits, targets)
-        acc5 = self.val_accuracy5(logits, targets)
+        try:
+            acc = self.val_accuracy(logits, targets)
+        except:
+            acc = 0
+        try:
+            acc5 = self.val_accuracy5(logits, targets)
+        except:
+            acc5 = 0
         self.log(f"{run_id}/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
         self.log(f"{run_id}/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
         self.log(f"{run_id}/acc5", acc5, on_step=False, on_epoch=True, prog_bar=True)
