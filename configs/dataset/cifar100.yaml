@@ -1,0 +1,47 @@
+# torchvision.datasets.CIFAR100(
+#   root: str, train: bool = True, transform: Optional[Callable] = None,
+#   target_transform: Optional[Callable] = None, download: bool = False)
+target: torchvision.datasets.CIFAR100
+root: ${work_dir}/tmp/data
+download: True
+train_dataset:
+  _target_: ${dataset.target}
+  root: ${dataset.root}
+  train: True
+  transform:
+    _target_: torchvision.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: torchvision.transforms.Normalize
+        mean:
+          - 0.507
+          - 0.487
+          - 0.441
+        std:
+          - 0.267
+          - 0.256
+          - 0.276
+      - _target_: torchvision.transforms.RandomHorizontalFlip
+      - _target_: torchvision.transforms.RandomCrop
+        size: 32
+        padding: 4
+  download: ${dataset.download}
+
+val_dataset:
+  _target_: ${dataset.target}
+  root: ${dataset.root}
+  train: False
+  transform:
+    _target_: torchvision.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: torchvision.transforms.Normalize
+        mean:
+          - 0.491
+          - 0.482
+          - 0.447
+        std:
+          - 0.247
+          - 0.243
+          - 0.262
+  download: ${dataset.download}
