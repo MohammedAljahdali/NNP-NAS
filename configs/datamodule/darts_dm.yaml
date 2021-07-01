@@ -1,4 +1,4 @@
-_target_: src.datamodules.classification_datamodule.ClassificationDataModule
+_target_: src.datamodules.dart_dm.DartDataModule
 batch_size: 64
 num_workers: 0
 pin_memory: False

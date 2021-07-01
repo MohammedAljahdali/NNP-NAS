@@ -15,6 +15,7 @@ def main(config: DictConfig):
     from src.train import train
     from src.utils import utils
     from src.lth import lth
+    from src.darts import train as darts
     # from src.prune import prune
 
     # A couple of optional utilities:
@@ -30,6 +31,8 @@ def main(config: DictConfig):
         utils.print_config(config, resolve=True)
     if config.lth.use:
         return lth(config)
+    elif config.model._target_ == 'src.models.darts_training.DARTS':
+        return darts(config)
     return train(config)
 
 

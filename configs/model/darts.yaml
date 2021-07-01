@@ -1,0 +1,17 @@
+_target_: src.models.darts_training.DARTS
+w_grad_clip: 5.0
+C_in: ??
+C: 16
+n_classes: ??
+n_layers: 8
+n_nodes: 4
+stem_multiplier: 3
+
+# SearchConfig(alpha_lr=0.0003, alpha_weight_decay=0.001, batch_size=64, data_path='./data/',
+# dataset='cifar10', epochs=50, gpus=[0], init_channels=16, layers=8, name='cifar10',
+# path='searchs/cifar10', plot_path='searchs/cifar10/plots', print_freq=50, seed=2,
+# w_grad_clip=5.0, w_lr=0.025, w_lr_min=0.001, w_momentum=0.9, w_weight_decay=0.0003, workers=4)
+defaults:
+  - optim:
+    - sgd
+    - adam

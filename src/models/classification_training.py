@@ -40,9 +40,10 @@ class ClassificationTraining(LightningModule):
         # this line ensures params passed to LightningModule will be saved to ckpt
         # it also allows to access params with 'self.hparams' attribute
         self.save_hyperparameters()
+        print(self.hparams)
+        self.module = instantiate(next(iter(self.hparams.module.values())))
 
-        self.module = instantiate(self.hparams.module)
-        if hasattr(torchvision.models, self.hparams.module._target_.split('.')[-1]):
+        if hasattr(torchvision.models, next(iter(self.hparams.module.values()))._target_.split('.')[-1]):
             print(f"\n\n\n---------{self.hparams.module._target_.split('.')[-1]}-------\n\n\n")
             # https://pytorch.org/docs/stable/torchvision/models.html
             mark_classifier(self.module)  # add is_classifier attribute
@@ -129,7 +130,8 @@ class ClassificationTraining(LightningModule):
         See examples here:
             https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
         """
-        return instantiate(self.hparams.optim, params=self.module.parameters(), _convert_="partial")
+        next(iter(self.hparams.optim.values()))
+        return instantiate(next(iter(self.hparams.optim.values())), params=self.module.parameters(), _convert_="partial")
 
     def on_fit_end(self) -> None:
         expr = self.logger.experiment[0]

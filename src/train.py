@@ -38,9 +38,9 @@ def train(config: DictConfig) -> Optional[float]:
                                                               _recursive_=False, )
 
     # Init Lightning model
-    log.info(f"Instantiating model <{config.model._target_}> with <{config.optim._target_}> optimizer")
+    log.info(f"Instantiating model <{config.model._target_}> with <{config.model.optim.keys()}> optimizer")
     model: LightningModule = hydra.utils.instantiate(
-        config.model, optim=config.optim, module=config.module, _recursive_=False,
+        config.model, _recursive_=False,
     )
 
     # Init Lightning callbacks

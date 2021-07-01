@@ -37,6 +37,7 @@ class ClassificationDataModule(LightningDataModule):
         num_workers: int = 0,
         pin_memory: bool = False,
         prefetch_factor: int = 2,
+        split: Optional[float] = None, # The percent of training samples, val percent = 1 - split
         **kwargs,
     ):
         super().__init__()
@@ -45,16 +46,20 @@ class ClassificationDataModule(LightningDataModule):
         self.num_workers = num_workers
         self.pin_memory = pin_memory
         self.prefetch_factor = prefetch_factor
-
+        self.split = split
         self.dataset = kwargs['dataset']
-        print(self.dataset)
 
         self.trainset: Optional[Dataset] = None
         self.valset: Optional[Dataset] = None
+        self.testset: Optional[Dataset] = None
 
     @property
     def num_classes(self) -> int:
-        return self.dataset.num_classes
+        return 10 # change later
+
+    @property
+    def shape(self) -> Tuple[int]:
+        return self.trainset.data.shape
 
     def prepare_data(self):
         """Download data if needed. This method is called only from a single GPU.
@@ -64,15 +69,19 @@ class ClassificationDataModule(LightningDataModule):
             instantiate(self.dataset.train_dataset)
             instantiate(self.dataset.val_dataset)
 
-            self.dataset.train_dataset.download = False
-            self.dataset.val_dataset.download = False
-
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: self.data_train, self.data_val, self.data_test."""
         log.info("Data Setup!")
         self.trainset = instantiate(self.dataset.train_dataset)
-        self.valset = instantiate(self.dataset.val_dataset)
+        if self.split:
+            train_length, val_length = int(self.split*len(self.trainset)), int((1 - self.split) * len(self.trainset))
+            self.trainset, self.valset = random_split(self.trainset, [train_length, val_length])
+            self.testset = instantiate(self.dataset.val_dataset)
+            self.valset.transform = self.testset.transform
+        else:
+            self.valset = instantiate(self.dataset.val_dataset)
+
         # dataset = ConcatDataset(datasets=[trainset, testset])
         # self.data_train, self.data_val, self.data_test = random_split(
         #     dataset, self.train_val_test_split
@@ -98,11 +107,14 @@ class ClassificationDataModule(LightningDataModule):
             shuffle=False,
         )
 
-    # def test_dataloader(self):
-    #     return DataLoader(
-    #         dataset=self.data_test,
-    #         batch_size=self.batch_size,
-    #         num_workers=self.num_workers,
-    #         pin_memory=self.pin_memory,
-    #         shuffle=False,
-    #     )
+    def test_dataloader(self):
+        if self.testset:
+            return DataLoader(
+                dataset=self.testset,
+                batch_size=self.batch_size,
+                num_workers=self.num_workers,
+                pin_memory=self.pin_memory,
+                shuffle=False,
+            )
+        else:
+            return None

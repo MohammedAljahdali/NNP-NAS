@@ -1,5 +1,10 @@
 _target_: src.models.classification_pruning.ClassificationPruning
-strategy: ${strategy}
+
 training: False
 pruning: True
+
+defaults:
+  - module: mnist_net
+  - optim: sgd
+  - strategy: layer_mag_act
 
