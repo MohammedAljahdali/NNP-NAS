@@ -10,7 +10,7 @@
 #SBATCH --cpus-per-task=6
 #SBATCH --constraint=[v100]
 #SBATCH --output=logs/slurm/%x-slurm.out
-#SBATCH --error=logs/slurm/%x-slurm.err
+#SBATCH --error=logs/slurm/%j-%x-slurm.err
 
 # entire script fails if single command fails
 set -e

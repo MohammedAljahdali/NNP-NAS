@@ -42,7 +42,8 @@ model:
 dataset:
   root: /tmp/data
 
-callbacks.early_stopping:
+callbacks:
+  early_stopping:
     patience: 10
 
 
