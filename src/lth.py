@@ -26,9 +26,10 @@ log = utils.get_logger(__name__)
 
 class MyModelPruning(ModelPruning):
 
-    def __init__(self, **kwargs):
+    def __init__(self, n_levels: int, **kwargs):
         super().__init__(**kwargs)
         self.level = ''
+        self.n_levels = n_levels
         self.logger: Optional[LightningLoggerBase] = None
         self.module: Optional[nn.Module] = None
         self.x: Optional[torch.T] = None
@@ -45,19 +46,29 @@ class MyModelPruning(ModelPruning):
     def on_train_epoch_end(self, trainer, pl_module: LightningModule):
         pass
 
-    def on_fit_end(self, trainer, pl_module):
+    # def on_test_end(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+    #     pass
+
+    def on_test_end(self, trainer, pl_module):
 
         current_epoch = trainer.current_epoch
-
 
         prune = self._apply_pruning(current_epoch) if isinstance(self._apply_pruning, Callable) else self._apply_pruning
         amount = self.amount(current_epoch) if isinstance(self.amount, Callable) else self.amount
         if not prune or not amount:
             return
         self.level = pl_module.hparams.run_id.split('-')[-1]
-        log.info(f'\n\n\n---- on fit end ----- \n\n\n')
+        log.info(f"level {self.level}, n_levels={(self.n_levels - 1)}")
+        if str(self.level) == str(self.n_levels - 1):
+            return
+        # This avoid pruning the model again when performing the second test to see the model results after pruning
+        if pl_module.test_counter % 2 != 0:
+            pl_module.test_counter += 1
+            return
+        pl_module.test_counter += 1
+        log.info(f'\n\n\n---- on test end ----- \n\n\n')
         # amount = 1
-        log.info(f"Pruning Level f{self.level}")
+        log.info(f"Pruning Level {self.level}")
         # for _ in range(int(self.level)+1):
         #     amount *= 0.5
 
@@ -188,6 +199,7 @@ def lth(config: DictConfig) -> Optional[float]:
     )
 
     pruning_callback = MyModelPruning(
+        n_levels=config.lth.N,
         apply_pruning=True, use_lottery_ticket_hypothesis=True,
         pruning_fn='l1_unstructured', use_global_unstructured=True, verbose=1, make_pruning_permanent=False,
         amount=config.lth.amount
@@ -226,7 +238,16 @@ def lth(config: DictConfig) -> Optional[float]:
 
     log.info("Starting training level 0!")
     trainer.fit(model=model, datamodule=datamodule)
-    print(f'\n\n\n----{early_stopping_callback.stopped_epoch}----- \n\n\n')
+
+    log.info(f'\n----Stopped on epoch {early_stopping_callback.stopped_epoch}----- \n')
+    # Print path to best checkpoint
+    log.info(f"Best checkpoint path:\n{trainer.checkpoint_callback.best_model_path}")
+
+    log.info("Starting testing level 0!")
+    trainer.test(ckpt_path='best')
+
+    log.info("Starting testing level 0 After Pruning!")
+    trainer.test(ckpt_path=None)
     # Now do the loop
     # TODO: modify the checkpoint callback save dir, to save models of different iterations on different folders
     for i in range(1, config.lth.N):
@@ -259,6 +280,17 @@ def lth(config: DictConfig) -> Optional[float]:
         log.info(f"Starting training level {i}!")
         trainer.fit(model=model, datamodule=datamodule)
 
+        # Print path to best checkpoint
+        log.info(f"Best checkpoint path:\n{trainer.checkpoint_callback.best_model_path}")
+
+        log.info(f"Starting testing level {i}!")
+        trainer.test(ckpt_path='best')
+
+        if i == config.lth.N - 1:
+            continue
+        log.info(f"Starting testing level {i} After Pruning!")
+        trainer.test(ckpt_path=None)
+
     log.info("Finalizing!")
     utils.finish(
         config=config,
@@ -268,9 +300,6 @@ def lth(config: DictConfig) -> Optional[float]:
         callbacks=callbacks,
         logger=logger,
     )
-
-    # Print path to best checkpoint
-    log.info(f"Best checkpoint path:\n{trainer.checkpoint_callback.best_model_path}")
 
     # Return metric score for hyperparameter optimization
     optimized_metric = config.get("optimized_metric")

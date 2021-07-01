@@ -41,6 +41,9 @@ class ClassificationTraining(LightningModule):
         # it also allows to access params with 'self.hparams' attribute
         self.save_hyperparameters()
         print(self.hparams)
+
+        self.test_counter = 0
+
         self.module = instantiate(next(iter(self.hparams.module.values())))
 
         if hasattr(torchvision.models, next(iter(self.hparams.module.values()))._target_.split('.')[-1]):
@@ -114,9 +117,11 @@ class ClassificationTraining(LightningModule):
         # log test metrics
         acc = self.test_accuracy(logits, targets)
         acc5 = self.test_accuracy5(logits, targets)
-        self.log("test/loss", loss, on_step=False, on_epoch=True)
-        self.log("test/acc", acc, on_step=False, on_epoch=True)
-        self.log("test/acc5", acc5, on_step=False, on_epoch=True)
+        state = "before_pruning" if self.test_counter % 2 == 0 else "after_pruning"
+
+        self.log(f"{self.hparams.run_id}/test-{state}/loss", loss, on_step=False, on_epoch=True)
+        self.log(f"{self.hparams.run_id}/test-{state}/acc", acc, on_step=False, on_epoch=True)
+        self.log(f"{self.hparams.run_id}/test-{state}/acc5", acc5, on_step=False, on_epoch=True)
 
         return {"loss": loss, "preds": preds, "targets": targets}
 

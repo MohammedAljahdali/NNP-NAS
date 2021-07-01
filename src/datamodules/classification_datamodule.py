@@ -75,7 +75,9 @@ class ClassificationDataModule(LightningDataModule):
         log.info("Data Setup!")
         self.trainset = instantiate(self.dataset.train_dataset)
         if self.split:
-            train_length, val_length = int(self.split*len(self.trainset)), int((1 - self.split) * len(self.trainset))
+            train_length = int(self.split*len(self.trainset))
+            val_length = len(self.trainset) - train_length
+            assert train_length + val_length == len(self.trainset), "Lengths should add up to be equal"
             self.trainset, self.valset = random_split(self.trainset, [train_length, val_length])
             self.testset = instantiate(self.dataset.val_dataset)
             self.valset.transform = self.testset.transform
