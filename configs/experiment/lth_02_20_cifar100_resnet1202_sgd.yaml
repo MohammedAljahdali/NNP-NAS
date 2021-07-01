@@ -62,4 +62,8 @@ datamodule:
   num_workers: 32
   prefetch_factor: 32
 
+run_type:
+  N: 20
+  amount: 0.2
+
 
