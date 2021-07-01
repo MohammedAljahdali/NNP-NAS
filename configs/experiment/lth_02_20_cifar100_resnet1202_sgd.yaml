@@ -36,6 +36,7 @@ model:
     cifar_resnet:
       pretrained: False
       name: resnet1202
+      num_classes: 100
   optim:
     sgd:
       nesterov: False
