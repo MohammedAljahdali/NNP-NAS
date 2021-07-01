@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split, Subset
 from torchvision.datasets import MNIST
 from hydra.utils import instantiate
 from torchvision.transforms import transforms
@@ -59,6 +59,8 @@ class ClassificationDataModule(LightningDataModule):
 
     @property
     def shape(self) -> Tuple[int]:
+        if isinstance(self.trainset, Subset):
+            return self.trainset.dataset.data.shape
         return self.trainset.data.shape
 
     def prepare_data(self):
