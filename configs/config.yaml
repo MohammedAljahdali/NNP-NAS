@@ -42,7 +42,7 @@ ignore_warnings: True
 # specify job
 dir: .
 
-#lth:
-#  N: 4
-#  use: False
-#  amount: 0.5
+lth:
+  N: 4
+  use: False
+  amount: 0.5

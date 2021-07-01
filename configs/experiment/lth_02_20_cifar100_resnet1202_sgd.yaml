@@ -52,6 +52,8 @@ callbacks:
 datamodule:
   batch_size: 128
   split: 0.8
+  num_workers: 32
+  prefetch_factor: 32
 
 lth:
   N: 20
