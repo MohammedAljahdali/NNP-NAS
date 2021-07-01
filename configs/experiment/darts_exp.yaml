@@ -14,6 +14,7 @@ defaults:
   - override /logger: wandb.yaml
   - override /dataset: cifar10.yaml
   - override /datamodule: darts_dm.yaml
+  - override /run_type: nas.yaml
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -23,6 +24,10 @@ seed: 12344
 logger:
   wandb:
     project: NNP-NAS
+    job_type: NAS
+    tags:
+      - cifar10
+      - darts
 
 trainer:
   min_epochs: 1

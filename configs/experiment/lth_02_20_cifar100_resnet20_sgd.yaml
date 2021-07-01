@@ -15,6 +15,7 @@ defaults:
   - override /callbacks: default.yaml
   - override /logger: wandb.yaml
   - override /dataset: cifar100.yaml
+  - override /run_type: lth.yaml
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -24,6 +25,12 @@ seed: 12344
 logger:
   wandb:
     project: NNP-NAS
+    job_type: NNP
+    tags:
+      - lth
+      - mag-pruning
+      - cifar10
+      - resnet20
 
 trainer:
   min_epochs: 1
@@ -54,10 +61,5 @@ datamodule:
   split: 0.8
   num_workers: 32
   prefetch_factor: 32
-
-lth:
-  N: 20
-  use: True
-  amount: 0.20
 
 

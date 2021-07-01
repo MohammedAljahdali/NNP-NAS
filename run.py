@@ -29,11 +29,11 @@ def main(config: DictConfig):
     # Pretty print config using Rich library
     if config.get("print_config"):
         utils.print_config(config, resolve=True)
-    if config.lth.use:
-        return lth(config)
-    elif config.model._target_ == 'src.models.darts_training.DARTS':
-        return darts(config)
-    return train(config)
+    # if config.lth.use:
+    #     return lth(config)
+    # elif config.model._target_ == 'src.models.darts_training.DARTS':
+    #     return darts(config)
+    return hydra.utils.call(config.run_type, cfg=config, _recursive_=False)
 
 
 if __name__ == "__main__":

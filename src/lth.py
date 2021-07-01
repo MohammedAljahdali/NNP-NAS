@@ -126,7 +126,7 @@ class MyModelPruning(ModelPruning):
                 )
 
 
-def lth(config: DictConfig) -> Optional[float]:
+def lth(cfg: DictConfig, N, amount) -> Optional[float]:
     """Contains training pipeline.
     Instantiates all PyTorch Lightning objects from config.
     To perform iterative pruning
@@ -144,30 +144,30 @@ def lth(config: DictConfig) -> Optional[float]:
         5. Repeat steps 2, 3 & 4 until a certain compression rate or something idk
 
     Args:
-        config (DictConfig): Configuration composed by Hydra.
+        cfg (DictConfig): Configuration composed by Hydra.
 
     Returns:
         Optional[float]: Metric score for hyperparameter optimization.
     """
 
     # Set seed for random number generators in pytorch, numpy and python.random
-    if "seed" in config:
-        seed_everything(config.seed, workers=True)
+    if "seed" in cfg:
+        seed_everything(cfg.seed, workers=True)
 
     # Init Lightning datamodule
-    log.info(f"Instantiating datamodule <{config.datamodule._target_}>")
-    datamodule: LightningDataModule = hydra.utils.instantiate(config.datamodule, dataset=config.dataset,
+    log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
+    datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule, dataset=cfg.dataset,
                                                               _recursive_=False, )
 
     # Init Lightning model
-    log.info(f"Instantiating model <{config.model._target_}> with <{config.model.optim.keys()}> optimizer")
+    log.info(f"Instantiating model <{cfg.model._target_}> with <{cfg.model.optim.keys()}> optimizer")
     model: LightningModule = hydra.utils.instantiate(
-        config.model, _recursive_=False,
+        cfg.model, _recursive_=False,
     )
     # Init Lightning callbacks
     callbacks: List[Callback] = []
-    if "callbacks" in config:
-        for _, cb_conf in config["callbacks"].items():
+    if "callbacks" in cfg:
+        for _, cb_conf in cfg["callbacks"].items():
             if "_target_" in cb_conf:
                 log.info(f"Instantiating callback <{cb_conf._target_}>")
                 if cb_conf._target_ == "pytorch_lightning.callbacks.EarlyStopping":
@@ -195,37 +195,37 @@ def lth(config: DictConfig) -> Optional[float]:
     pruning_callable = functools.partial(
         stop_training_check,
         early_stopping_callback=early_stopping_callback,
-        max_epochs=config.trainer.max_epochs
+        max_epochs=cfg.trainer.max_epochs
     )
 
     pruning_callback = MyModelPruning(
-        n_levels=config.lth.N,
+        n_levels=N,
         apply_pruning=True, use_lottery_ticket_hypothesis=True,
         pruning_fn='l1_unstructured', use_global_unstructured=True, verbose=1, make_pruning_permanent=False,
-        amount=config.lth.amount
+        amount=amount
     )
     callbacks.append(pruning_callback)
 
     # Init Lightning loggers
     logger: List[LightningLoggerBase] = []
-    if "logger" in config:
-        for _, lg_conf in config["logger"].items():
+    if "logger" in cfg:
+        for _, lg_conf in cfg["logger"].items():
             if "_target_" in lg_conf:
                 log.info(f"Instantiating logger <{lg_conf._target_}>")
                 if lg_conf._target_ == "pytorch_lightning.loggers.wandb.WandbLogger":
-                    lg_conf.job_type = "prune" if not config.model.training else "train"
+                    lg_conf.job_type = "prune" if not cfg.model.training else "train"
                 logger.append(hydra.utils.instantiate(lg_conf))
 
     # Init Lightning trainer for training
-    log.info(f"Instantiating  for training level 0   <{config.trainer._target_}>")
+    log.info(f"Instantiating  for training level 0   <{cfg.trainer._target_}>")
     trainer: Trainer = hydra.utils.instantiate(
-        config.trainer, callbacks=callbacks, logger=logger, _convert_="partial"
+        cfg.trainer, callbacks=callbacks, logger=logger, _convert_="partial"
     )
 
     # Send some parameters from config to all lightning loggers
     log.info("Logging hyperparameters!")
     utils.log_hyperparameters(
-        config=config,
+        config=cfg,
         model=model,
         datamodule=datamodule,
         trainer=trainer,
@@ -250,11 +250,11 @@ def lth(config: DictConfig) -> Optional[float]:
     trainer.test(ckpt_path=None)
     # Now do the loop
     # TODO: modify the checkpoint callback save dir, to save models of different iterations on different folders
-    for i in range(1, config.lth.N):
+    for i in range(1, N):
         # Init Lightning callbacks
         callbacks: List[Callback] = []
-        if "callbacks" in config:
-            for _, cb_conf in config["callbacks"].items():
+        if "callbacks" in cfg:
+            for _, cb_conf in cfg["callbacks"].items():
                 if "_target_" in cb_conf:
                     log.info(f"Instantiating callback <{cb_conf._target_}>")
                     callbacks.append(hydra.utils.instantiate(cb_conf))
@@ -269,9 +269,9 @@ def lth(config: DictConfig) -> Optional[float]:
                 callback.dirpath = callback.dirpath + f'/{model.hparams.run_id}/'
 
         # Init Lightning trainer for training
-        log.info(f"Instantiating  for training level {i} <{config.trainer._target_}>")
+        log.info(f"Instantiating  for training level {i} <{cfg.trainer._target_}>")
         trainer: Trainer = hydra.utils.instantiate(
-            config.trainer, callbacks=callbacks, logger=logger, _convert_="partial"
+            cfg.trainer, callbacks=callbacks, logger=logger, _convert_="partial"
         )
 
         log.debug(f"MODEL PARAMETERS LEVEL {i}")
@@ -286,14 +286,14 @@ def lth(config: DictConfig) -> Optional[float]:
         log.info(f"Starting testing level {i}!")
         trainer.test(ckpt_path='best')
 
-        if i == config.lth.N - 1:
+        if i == N - 1:
             continue
         log.info(f"Starting testing level {i} After Pruning!")
         trainer.test(ckpt_path=None)
 
     log.info("Finalizing!")
     utils.finish(
-        config=config,
+        config=cfg,
         model=model,
         datamodule=datamodule,
         trainer=trainer,
@@ -302,6 +302,6 @@ def lth(config: DictConfig) -> Optional[float]:
     )
 
     # Return metric score for hyperparameter optimization
-    optimized_metric = config.get("optimized_metric")
+    optimized_metric = cfg.get("optimized_metric")
     if optimized_metric:
         return trainer.callback_metrics[optimized_metric]
