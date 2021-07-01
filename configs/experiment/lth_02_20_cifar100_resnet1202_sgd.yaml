@@ -22,7 +22,8 @@ defaults:
 seed: 12344
 
 logger:
-  project: NNP-NAS
+  wandb:
+    project: NNP-NAS
 
 trainer:
   min_epochs: 1
@@ -32,10 +33,12 @@ trainer:
 
 model:
   module:
-    pretrained: False
-    name: resnet1202
+    cifar_resnet:
+      pretrained: False
+      name: resnet1202
   optim:
-    nesterov: False
+    sgd:
+      nesterov: False
 
 dataset:
   root: /tmp/data
