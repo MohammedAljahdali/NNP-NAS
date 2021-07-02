@@ -7,6 +7,6 @@ set -e
 export PROJECT_DIR="$PWD"
 
 # launch the training job
-sbatch --job-name "$JOB_NAME" \
+sbatch --job-name "$@" \
     "$PROJECT_DIR"/bin/train.sbatch "$PROJECT_DIR"/run.py "$@"
 

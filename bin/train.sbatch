@@ -1,15 +1,12 @@
 #!/bin/bash --login
 #SBATCH -N 1
 #SBATCH --partition=batch
-#SBATCH -J test_pruning
-#SBATCH -o test_pruning.%J.out
-#SBATCH -e test_pruning.%J.err
-#SBATCH --time=05:30:00
+#SBATCH --time=48:00:00
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=6
 #SBATCH --constraint=[v100]
-#SBATCH --output=logs/slurm/%x-slurm.out
+#SBATCH --output=logs/slurm/%j-%x-slurm.out
 #SBATCH --error=logs/slurm/%j-%x-slurm.err
 
 # entire script fails if single command fails
