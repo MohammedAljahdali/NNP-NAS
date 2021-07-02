@@ -76,6 +76,7 @@ class MyModelPruning(ModelPruning):
         self.logger = pl_module.logger
         self.module = pl_module.module
         self.x, y = next(iter(trainer.datamodule.train_dataloader()))
+        self.x.to(pl_module.device)
         log.debug("BEFORE")
         log.debug([self._get_pruned_stats(m, n) for m, n in self._parameters_to_prune])
         log.debug("END OF BEFORE")
