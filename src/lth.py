@@ -76,7 +76,7 @@ class MyModelPruning(ModelPruning):
         self.logger = pl_module.logger
         self.module = pl_module.module
         self.x, y = next(iter(trainer.datamodule.train_dataloader()))
-        self.x.to(pl_module.device)
+        self.x = self.x.to(pl_module.device)
         log.debug("BEFORE")
         log.debug([self._get_pruned_stats(m, n) for m, n in self._parameters_to_prune])
         log.debug("END OF BEFORE")
@@ -111,6 +111,7 @@ class MyModelPruning(ModelPruning):
         self.logger.experiment[0].summary[f"level-{self.level}/compression_ratio"] = total_params / (total_params - curr_total_zeros)
 
         # FLOPS
+
         ops, ops_nz = flops(self.module, self.x)
         self.logger.experiment[0].summary[f"level-{self.level}/flops"] = ops
         self.logger.experiment[0].summary[f"level-{self.level}/flops_nz"] = ops_nz
