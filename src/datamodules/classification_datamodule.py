@@ -118,6 +118,7 @@ class ClassificationDataModule(LightningDataModule):
                 batch_size=self.batch_size,
                 num_workers=self.num_workers,
                 pin_memory=self.pin_memory,
+                prefetch_factor=self.prefetch_factor,
                 shuffle=False,
             )
         else:
