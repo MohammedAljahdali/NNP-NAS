@@ -30,8 +30,8 @@ logger:
       - lth
       - mag-pruning
       - cifar100
-      - resnet1202
-      - 0.2
+      - resnet20
+      - 0.3
 
 trainer:
   min_epochs: 1
@@ -43,7 +43,7 @@ model:
   module:
     cifar_resnet:
       pretrained: False
-      name: resnet1202
+      name: resnet20
       num_classes: 100
   optim:
     sgd:
@@ -65,6 +65,5 @@ datamodule:
 
 run_type:
   N: 20
-  amount: 0.2
-
+  amount: 0.3
 
