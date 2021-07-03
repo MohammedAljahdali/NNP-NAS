@@ -12,7 +12,7 @@ defaults:
   - override /model: darts.yaml
   - override /callbacks: default.yaml
   - override /logger: wandb.yaml
-  - override /dataset: cifar10.yaml
+  - override /dataset: cifar100.yaml
   - override /datamodule: darts_dm.yaml
   - override /run_type: nas.yaml
 
@@ -26,7 +26,7 @@ logger:
     project: NNP-NAS
     job_type: NAS
     tags:
-      - cifar10
+      - cifar100
       - darts
 
 trainer:
@@ -35,12 +35,12 @@ trainer:
   gpus: 1
 
 model:
-  n_classes: 10
+  n_classes: 100
   optim:
     sgd:
-      lr: 0.025
+      lr: 0.1
     adam:
-      lr: 0.0003
+      lr: 0.0012
       weight_decay: 0.0003
 
 dataset:
@@ -52,7 +52,7 @@ callbacks:
 
 
 datamodule:
-  batch_size: 64
+  batch_size: 256
   split: 0.8
   num_workers: 32
   prefetch_factor: 32

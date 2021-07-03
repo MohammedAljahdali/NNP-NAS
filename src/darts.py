@@ -39,7 +39,7 @@ def train(cfg: DictConfig) -> Optional[float]:
     log.info(f"Instantiating model <{cfg.model._target_}>")
     log.info(f"{datamodule.shape[-1]}, {datamodule.num_classes}")
     cfg.model.C_in = datamodule.shape[-1]
-    cfg.model.n_classes = datamodule.num_classes
+    # cfg.model.n_classes = datamodule.num_classes
     model: LightningModule = hydra.utils.instantiate(
         cfg.model,
         _recursive_=False
