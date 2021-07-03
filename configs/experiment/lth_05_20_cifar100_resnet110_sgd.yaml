@@ -31,7 +31,7 @@ logger:
       - mag-pruning
       - cifar100
       - resnet110
-      - 05
+      - amount=0.5
 
 trainer:
   min_epochs: 1
