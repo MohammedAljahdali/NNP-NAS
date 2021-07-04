@@ -235,6 +235,7 @@ class DARTS(pl.LightningModule):
         logits = self.net(x)
         loss = self.net.criterion(logits, y)
 
+        logits = F.softmax(logits)
         # log test metrics
         acc = self.test_accuracy(logits, y)
         acc5 = self.test_accuracy5(logits, y)
