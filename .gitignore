@@ -73,6 +73,9 @@ target/
 .ipynb_checkpoints
 *.ipynb
 
+#wandb
+media/
+
 # pyenv
 .python-version
 
