@@ -231,21 +231,23 @@ class DARTS(pl.LightningModule):
         pass
 
     def test_step(self, batch: Any, batch_idx: int):
-        loss, logits, preds, targets = self.step(batch)
+        x, y = batch
+        logits = self.net(x)
+        loss = self.net.criterion(logits, y)
 
         # log test metrics
-        acc = self.test_accuracy(logits, targets)
-        acc5 = self.test_accuracy5(logits, targets)
+        acc = self.test_accuracy(logits, y)
+        acc5 = self.test_accuracy5(logits, y)
         self.log("test/loss", loss, on_step=False, on_epoch=True)
         self.log("test/acc", acc, on_step=False, on_epoch=True)
         self.log("test/acc5", acc5, on_step=False, on_epoch=True)
 
-        return {"loss": loss, "preds": preds, "targets": targets}
+        return {"loss": loss}
 
     def test_epoch_end(self, outputs: List[Any]):
         pass
 
-    def on_validation_epoch_end(self) -> None:
+    def on_epoch_end(self) -> None:
         #         self.net.print_alphas()
         if self.trainer.sanity_checking:
             return
