@@ -167,7 +167,7 @@ class DARTS(pl.LightningModule):
         self.val_accuracy5 = Accuracy(top_k=5)
         self.test_accuracy5 = Accuracy(top_k=5)
 
-        self.table = wandb.Table(columns=["GenoType", "Current Score", "Epoch", "Step"])
+        self.table = wandb.Table(columns=["GenoType", "Current Val Score", "Current Training Score", "Epoch", "Step"])
 
 
     def on_train_epoch_start(self) -> None:
@@ -248,16 +248,19 @@ class DARTS(pl.LightningModule):
     def test_epoch_end(self, outputs: List[Any]):
         pass
 
-    def on_epoch_end(self) -> None:
+    def on_validation_epoch_end(self) -> None:
         #         self.net.print_alphas()
         if self.trainer.sanity_checking:
             return
         current_score = self.trainer.checkpoint_callback.current_score.item() if self.trainer.checkpoint_callback.current_score is not None else "Not evaluated"
         self.table.add_data(
             str(self.net.genotype()),
-            str(current_score),
+            str(self.val_accuracy.compute().item()),
+            str(self.train_accuracy.compute().item()),
             str(self.current_epoch), str(self.global_step),
         )
+        self.val_accuracy.reset()
+        self.train_accuracy.reset()
         expr = self.logger.experiment[0]
         expr.summary["best_score"] = self.trainer.checkpoint_callback.best_model_score
         # log genotype
