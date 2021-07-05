@@ -1,0 +1,71 @@
+# @package _global_
+
+# to execute this experiment run:
+# python run.py experiment=lth_exp.yaml
+
+
+# python run.py lth.use=True model=classification_training logger=wandb dataset=cifar10
+# model/module=cifar_resnet model.training=True datamodule.batch_size=64
+# lth.N=4 trainer.max_epochs=100
+# callbacks.early_stopping.patience=2 model.module.cifar_resnet.pretrained=False datamodule.split=0.8
+defaults:
+#  - override /trainer: minimal.yaml # choose trainer from 'configs/trainer/'
+  - override /model: classification_training.yaml
+  - override /model/module: finetune_darts.yaml
+  - override /callbacks: default.yaml
+  - override /logger: wandb.yaml
+  - override /dataset: cifar100.yaml
+  - override /run_type: lth.yaml
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+seed: 12344
+
+logger:
+  wandb:
+    project: NNP-NAS
+    job_type: NAS_finetuning
+    tags:
+      - darts_finetuning
+      - cifar100
+      - lunar-yogurt-50 # specify from which run the geno was taken
+    group: lunar-yogurt-50 # specify from which run the geno was taken
+
+trainer:
+  min_epochs: 1
+  max_epochs: 300
+  gpus: 1
+  benchmark: True
+  gradient_clip_val: 5.0
+
+model:
+  module:
+    finetune_darts:
+      genotype: "Genotype(normal=[[('skip_connect', 0), ('sep_conv_3x3', 1)], [('skip_connect', 0), ('skip_connect', 1)], [('skip_connect', 0), ('skip_connect', 1)], [('skip_connect', 0), ('skip_connect', 1)]], normal_concat=range(2, 6), reduce=[[('avg_pool_3x3', 0), ('avg_pool_3x3', 1)], [('skip_connect', 2), ('avg_pool_3x3', 0)], [('skip_connect', 2), ('avg_pool_3x3', 0)], [('skip_connect', 2), ('skip_connect', 3)]], reduce_concat=range(2, 6))"
+      C_in: 3
+      n_classes: 100
+      n_layers: 8
+      C: 32
+  optim:
+    sgd:
+      nesterov: False
+
+dataset:
+  root: /tmp/data
+
+callbacks:
+  early_stopping:
+    patience: 10
+
+
+datamodule:
+  batch_size: 128
+  split: 0.8
+  num_workers: 6
+  prefetch_factor: 32
+
+run_type:
+  N: 20
+  amount: 0.2
+

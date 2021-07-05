@@ -1,0 +1,8 @@
+finetune_darts:
+  _target_: src.models.modules.finetune_darts.AugmentCNN
+  C_in: ???
+  C: 36
+  n_classes: ???
+  n_layers: 20
+  genotype: ???
+  stem_multiplier: 3
