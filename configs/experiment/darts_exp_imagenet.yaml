@@ -1,0 +1,61 @@
+# @package _global_
+
+# to execute this experiment run:
+# python run.py experiment=lth_cifar10_resnet20_sgd.yaml
+
+
+# model=darts logger=wandb dataset=cifar10 datamodule=darts_dm datamodule.batch_size=128
+# trainer.max_epochs=40 +callbacks.early_stopping.verbose=True callbacks.early_stopping.patience=5
+# dir=. dataset.root=/tmp/darts/data trainer.gpus=1 datamodule.prefetch_factor=16 datamodule.num_workers=32
+defaults:
+#  - override /trainer: minimal.yaml # choose trainer from 'configs/trainer/'
+  - override /model: darts.yaml
+  - override /callbacks: default.yaml
+  - override /logger: wandb.yaml
+  - override /dataset: imagenet.yaml
+  - override /datamodule: darts_dm.yaml
+  - override /run_type: nas.yaml
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+seed: 12344
+
+logger:
+  wandb:
+    project: NNP-NAS
+    job_type: NAS
+    tags:
+      - imagenet
+      - darts
+      - non_scaled
+
+trainer:
+  min_epochs: 1
+  max_epochs: 300
+  gpus: 1
+
+model:
+  n_classes: 1000
+  optim:
+    sgd:
+      lr: 0.025
+    adam:
+      lr: 0.0003
+      weight_decay: 0.0003
+
+#dataset:
+#  root: /tmp/data
+
+callbacks:
+  early_stopping:
+    patience: 10
+
+
+datamodule:
+  batch_size: 64
+  split: 0.5
+  num_workers: 6
+  prefetch_factor: 32
+
+
