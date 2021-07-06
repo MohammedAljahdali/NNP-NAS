@@ -1,0 +1,4 @@
+resnet:
+  _target_: torchvision.models.resnet18
+  pretrained: False
+  progress: False # Should be either 10 or 100

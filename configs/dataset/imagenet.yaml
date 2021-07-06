@@ -1,0 +1,41 @@
+# torchvision.datasets.CIFAR100(
+#   root: str, train: bool = True, transform: Optional[Callable] = None,
+#   target_transform: Optional[Callable] = None, download: bool = False)
+target: torchvision.datasets.ImageFolder
+root: /local/reference/CV/ILSVR/classification-localization/data/jpeg
+train_dataset:
+  _target_: ${dataset.target}
+  root: ${dataset.root}/train
+  transform:
+    _target_: torchvision.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: torchvision.transforms.Normalize # [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+        mean:
+          - 0.485
+          - 0.456
+          - 0.406
+        std:
+          - 0.229
+          - 0.224
+          - 0.225
+      - _target_: torchvision.transforms.RandomResizedCrop
+        size: 224
+      - _target_: torchvision.transforms.RandomHorizontalFlip
+
+val_dataset:
+  _target_: ${dataset.target}
+  root: ${dataset.root}
+  transform:
+    _target_: torchvision.transforms.Compose
+    transforms:
+      - _target_: torchvision.transforms.ToTensor
+      - _target_: torchvision.transforms.Normalize
+        mean:
+          - 0.485
+          - 0.456
+          - 0.406
+        std:
+          - 0.229
+          - 0.224
+          - 0.225
