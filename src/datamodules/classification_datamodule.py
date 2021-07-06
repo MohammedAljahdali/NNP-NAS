@@ -55,13 +55,30 @@ class ClassificationDataModule(LightningDataModule):
 
     @property
     def num_classes(self) -> int:
-        return 10 # change later
+        if self.dataset.target == "torchvision.datasets.CIFAR10":
+            return 10
+        elif self.dataset.target == "torchvision.datasets.CIFAR100":
+            return 100
+        elif self.dataset.target == "torchvision.datasets.ImageFolder":
+            return 1000
+        elif self.dataset.target == "torchvision.datasets.MNIST":
+            return 10
+        else:
+            raise ValueError()
 
     @property
-    def shape(self) -> Tuple[int]:
-        if isinstance(self.trainset, Subset):
-            return self.trainset.dataset.data.shape
-        return self.trainset.data.shape
+    def channels(self) -> int:
+        if self.dataset.target == "torchvision.datasets.CIFAR10":
+            return 3
+        elif self.dataset.target == "torchvision.datasets.CIFAR100":
+            return 3
+        elif self.dataset.target == "torchvision.datasets.ImageFolder":
+            return 3
+        elif self.dataset.target == "torchvision.datasets.MNIST":
+            return 1
+        else:
+            raise ValueError()
+
 
     def prepare_data(self):
         """Download data if needed. This method is called only from a single GPU.

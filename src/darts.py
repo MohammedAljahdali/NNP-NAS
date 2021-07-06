@@ -37,8 +37,8 @@ def train(cfg: DictConfig) -> Optional[float]:
 
     # Init Lightning model
     log.info(f"Instantiating model <{cfg.model._target_}>")
-    log.info(f"{datamodule.shape[-1]}, {datamodule.num_classes}")
-    cfg.model.C_in = datamodule.shape[-1]
+    log.info(f"{datamodule.channels}, {datamodule.num_classes}")
+    cfg.model.C_in = datamodule.channels
     # cfg.model.n_classes = datamodule.num_classes
     model: LightningModule = hydra.utils.instantiate(
         cfg.model,
