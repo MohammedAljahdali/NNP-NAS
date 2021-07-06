@@ -30,6 +30,7 @@ logger:
       - darts_finetuning
       - cifar100
       - lunar-yogurt-50 # specify from which run the geno was taken
+      - amount=0.2
     group: lunar-yogurt-50 # specify from which run the geno was taken
 
 trainer:
