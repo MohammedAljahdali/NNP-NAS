@@ -85,6 +85,7 @@ class AugmentCNN(nn.Module):
 
         self.gap = nn.AdaptiveAvgPool2d(1)
         self.linear = nn.Linear(C_p, n_classes)
+        self.linear.is_classifier = True  # So layer is not pruned
 
     def forward(self, x):
         s0 = s1 = self.stem(x)
