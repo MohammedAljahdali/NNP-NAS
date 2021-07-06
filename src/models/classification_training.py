@@ -47,7 +47,7 @@ class ClassificationTraining(LightningModule):
         self.module = instantiate(next(iter(self.hparams.module.values())))
         print(self.module)
         if hasattr(torchvision.models, next(iter(self.hparams.module.values()))._target_.split('.')[-1]):
-            print(f"\n\n\n---------{self.hparams.module._target_.split('.')[-1]}-------\n\n\n")
+            print(f"\n\n\n---------{next(iter(self.hparams.module.values()))._target_.split('.')[-1]}-------\n\n\n")
             # https://pytorch.org/docs/stable/torchvision/models.html
             mark_classifier(self.module)  # add is_classifier attribute
         # Todo: Check if the model is compatible
