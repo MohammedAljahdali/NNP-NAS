@@ -1,7 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import hydra
-import pytorch_lightning
 import torch
 from omegaconf import DictConfig
 from pytorch_lightning import (
@@ -13,11 +12,11 @@ from pytorch_lightning import (
 )
 from pytorch_lightning.loggers import LightningLoggerBase
 from pytorch_lightning.callbacks import ModelPruning, EarlyStopping, ModelCheckpoint
-import functools
 from src.utils import utils
 from pytorch_lightning.utilities.distributed import rank_zero_only
 from torch import nn
-from src.metrics import model_size, flops
+from src.metrics import flops
+
 _PARAM_TUPLE = Tuple[nn.Module, str]
 _PARAM_LIST = Union[List[_PARAM_TUPLE], Tuple[_PARAM_TUPLE]]
 
@@ -108,7 +107,8 @@ class MyModelPruning(ModelPruning):
         self.logger.experiment[0].summary[f"level-{self.level}/size"] = total_params - curr_total_zeros
         self.logger.experiment[0].summary[f"level-{self.level}/pruned"] = curr_total_zeros / total_params
 
-        self.logger.experiment[0].summary[f"level-{self.level}/compression_ratio"] = total_params / (total_params - curr_total_zeros)
+        self.logger.experiment[0].summary[f"level-{self.level}/compression_ratio"] = total_params / (
+                    total_params - curr_total_zeros)
 
         # FLOPS
 
@@ -185,20 +185,6 @@ def lth(cfg: DictConfig, N, amount) -> Optional[float]:
             callback.monitor = f"{model.hparams.run_id}/{callback.monitor}"
         if isinstance(callback, ModelCheckpoint):
             callback.dirpath = callback.dirpath + f'/{model.hparams.run_id}/'
-
-    # Init the pruning callback
-    def stop_training_check(current_epoch, early_stopping_callback: EarlyStopping, max_epochs: int):
-        print(early_stopping_callback)
-        print(f'\n\n\n----{early_stopping_callback.stopped_epoch} ---- {current_epoch} ----- \n\n\n')
-        return (current_epoch == early_stopping_callback.stopped_epoch and current_epoch != 0) \
-               or current_epoch == max_epochs - 1
-
-    # This code assumes you will always have early stopping callback
-    pruning_callable = functools.partial(
-        stop_training_check,
-        early_stopping_callback=early_stopping_callback,
-        max_epochs=cfg.trainer.max_epochs
-    )
 
     pruning_callback = MyModelPruning(
         n_levels=N,
