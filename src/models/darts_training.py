@@ -437,3 +437,13 @@ class PCSearchCNN(nn.Module):
         for k, v in self.named_parameters():
             if 'alpha' not in k:
                 yield k, v
+    
+    def alphas(self):
+        for k, v in self.named_parameters():
+            if 'alpha' in k:
+                yield v
+
+    def named_alphas(self):
+        for k, v in self.named_parameters():
+            if 'alpha'in k:
+                yield k, v
