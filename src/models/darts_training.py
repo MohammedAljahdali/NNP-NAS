@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.models.modules.search_cells import SearchCell
+from src.models.modules.search_cells import SearchCell, PCSearchCell
 import src.models.modules.genotypes as gt
 import pytorch_lightning as pl
 import wandb
@@ -143,13 +143,14 @@ class SearchCNN(nn.Module):
 
 
 class DARTS(pl.LightningModule):
-    def __init__(self, C_in, C, n_classes, n_layers=8, n_nodes=4, stem_multiplier=3, **kwargs):
+    def __init__(self, C_in, C, n_classes, n_layers=8, n_nodes=4, stem_multiplier=3, pc=False, first_order=True, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         print(self.hparams)
         self.automatic_optimization = False # important
         criterion = nn.CrossEntropyLoss()
-        self.net = SearchCNN(
+        Network = PCSearchCNN if self.hparams.pc else SearchCNN
+        self.net = Network(
             self.hparams.C_in, self.hparams.C, self.hparams.n_classes, self.hparams.n_layers, criterion,
             n_nodes=self.hparams.n_nodes, stem_multiplier=self.hparams.stem_multiplier
         )
@@ -186,7 +187,10 @@ class DARTS(pl.LightningModule):
 
         # phase 2. architect step (alpha)
         alpha_optim.zero_grad()
-        self.architect.unrolled_backward(train_x, train_y, val_x, val_y, self.lr, weights_optim)
+        if self.hparams.first_order:
+            self.architect.first_order(val_x, val_y)
+        else:
+            self.architect.unrolled_backward(train_x, train_y, val_x, val_y, self.lr, weights_optim)
         alpha_optim.step()
 
         # phase 1. child network step (w)
@@ -252,7 +256,6 @@ class DARTS(pl.LightningModule):
         #         self.net.print_alphas()
         if self.trainer.sanity_checking:
             return
-        current_score = self.trainer.checkpoint_callback.current_score.item() if self.trainer.checkpoint_callback.current_score is not None else "Not evaluated"
         self.table.add_data(
             str(self.net.genotype()),
             str(self.val_accuracy.compute().item()),
@@ -290,3 +293,147 @@ class DARTS(pl.LightningModule):
     def on_fit_end(self) -> None:
         expr = self.logger.experiment[0]
         expr.log({"Table": self.table})
+
+
+
+class PCSearchCNN(nn.Module):
+    """ Search CNN model """
+    def __init__(self, C_in, C, n_classes, n_layers, criterion, n_nodes=4, stem_multiplier=3):
+        """
+        Args:
+            C_in: # of input channels
+            C: # of starting model channels
+            n_classes: # of classes
+            n_layers: # of layers
+            n_nodes: # of intermediate nodes in Cell
+            stem_multiplier
+        """
+        super().__init__()
+        self.C_in = C_in
+        self.C = C
+        self.n_classes = n_classes
+        self.n_layers = n_layers
+        self.n_nodes = n_nodes
+        self.criterion = criterion
+
+        C_cur = stem_multiplier * C
+        self.stem = nn.Sequential(
+            nn.Conv2d(C_in, C_cur, 3, 1, 1, bias=False),
+            nn.BatchNorm2d(C_cur)
+        )
+
+        # for the first cell, stem is used for both s0 and s1
+        # [!] C_pp and C_p is output channel size, but C_cur is input channel size.
+        C_pp, C_p, C_cur = C_cur, C_cur, C
+
+        self.cells = nn.ModuleList()
+        reduction_p = False
+        for i in range(n_layers):
+            # Reduce featuremap size and double channels in 1/3 and 2/3 layer.
+            if i in [n_layers//3, 2*n_layers//3]:
+                C_cur *= 2
+                reduction = True
+            else:
+                reduction = False
+
+            cell = PCSearchCell(n_nodes, C_pp, C_p, C_cur, reduction_p, reduction)
+            reduction_p = reduction
+            self.cells.append(cell)
+            C_cur_out = C_cur * n_nodes
+            C_pp, C_p = C_p, C_cur_out
+
+        self.gap = nn.AdaptiveAvgPool2d(1)
+        self.linear = nn.Linear(C_p, n_classes)
+
+        # initialize architect parameters: alphas
+        self._init_alphas()
+
+    def _init_alphas(self):
+        """
+        initialize architect parameters: alphas
+        """
+        n_ops = len(gt.PRIMITIVES)
+
+        self.alpha_normal = nn.ParameterList()
+        self.alpha_reduce = nn.ParameterList()
+
+        self.beta_normal = nn.ParameterList()
+        self.beta_reduce = nn.ParameterList()
+
+        for i in range(self.n_nodes):
+            self.alpha_normal.append(nn.Parameter(1e-3*torch.randn(i+2, n_ops)))
+            self.alpha_reduce.append(nn.Parameter(1e-3*torch.randn(i+2, n_ops)))
+
+            self.beta_normal.append(nn.Parameter(1e-3*torch.randn(i+2)))
+            self.beta_reduce.append(nn.Parameter(1e-3*torch.randn(i+2)))
+
+
+    def forward(self, x):
+        s0 = s1 = self.stem(x)
+
+        weights_normal = [F.softmax(alpha, dim=-1) for alpha in self.alpha_normal]
+        weights_reduce = [F.softmax(alpha, dim=-1) for alpha in self.alpha_reduce]
+
+        n = 3
+        start = 2
+        weights2_normal = F.softmax(self.beta_normal[0:2], dim=-1)
+        for i in range(self._steps - 1):
+            end = start + n
+            tw2 = F.softmax(self.beta_normal[start:end], dim=-1)
+            start = end
+            n += 1
+            weights2_normal = torch.cat([weights2_normal, tw2], dim=0)
+
+        n = 3
+        start = 2
+        weights2_reduce = F.softmax(self.betas_reduce[0:2], dim=-1)
+        for i in range(self._steps-1):
+            end = start + n
+            tw2 = F.softmax(self.betas_reduce[start:end], dim=-1)
+            start = end
+            n += 1
+            weights2_reduce = torch.cat([weights2_reduce,tw2],dim=0)
+
+        for cell in self.cells:
+            weights = weights_reduce if cell.reduction else weights_normal
+            weights2 = weights2_reduce if cell.reduction else weights2_normal
+            s0, s1 = s1, cell(s0, s1, weights, weights2)
+
+        out = self.gap(s1)
+        out = out.view(out.size(0), -1) # flatten
+        logits = self.linear(out)
+        return logits
+
+    def loss(self, X, y):
+        logits = self(X)
+        return self.criterion(logits, y)
+
+    def print_alphas(self):
+        # TODO: change it to return str
+        print("####### ALPHA #######")
+        print("# Alpha - normal")
+        for alpha in self.alpha_normal:
+            print(F.softmax(alpha, dim=-1))
+
+        print("\n# Alpha - reduce")
+        for alpha in self.alpha_reduce:
+            print(F.softmax(alpha, dim=-1))
+        print("#####################")
+
+    def genotype(self):
+        gene_normal = gt.parse(self.alpha_normal, k=2)
+        gene_reduce = gt.parse(self.alpha_reduce, k=2)
+        concat = range(2, 2+self.n_nodes) # concat all intermediate nodes
+
+        return gt.Genotype(normal=gene_normal, normal_concat=concat,
+                           reduce=gene_reduce, reduce_concat=concat)
+
+    def weights(self):
+        for k, v in self.named_parameters():
+            if 'alpha' not in k:
+                yield v
+
+    def named_weights(self):
+        for k, v in self.named_parameters():
+            if 'alpha' not in k:
+                yield k, v

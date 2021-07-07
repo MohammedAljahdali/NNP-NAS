@@ -49,6 +49,10 @@ class Architect():
             for a, va in zip(self.net.alphas(), self.v_net.alphas()):
                 va.copy_(a)
 
+    def first_order(self, val_x, val_y):
+        loss = self.net.loss(val_x, val_y)
+        loss.backward()
+
     def unrolled_backward(self, trn_X, trn_y, val_X, val_y, xi, w_optim):
         """ Compute unrolled loss and backward its gradients
         Args:
