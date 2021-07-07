@@ -376,20 +376,22 @@ class PCSearchCNN(nn.Module):
 
         n = 3
         start = 2
-        weights2_normal = F.softmax(self.beta_normal[0:2], dim=-1)
+        weights2_normal = [F.softmax(beta, dim=-1) for beta in self.beta_normal[0:2]]
         for i in range(self._steps - 1):
             end = start + n
-            tw2 = F.softmax(self.beta_normal[start:end], dim=-1)
+            # tw2 = F.softmax(self.beta_normal[start:end], dim=-1)
+            tw2 = [F.softmax(beta, dim=-1) for beta in self.beta_normal[start:end]]
             start = end
             n += 1
             weights2_normal = torch.cat([weights2_normal, tw2], dim=0)
 
         n = 3
         start = 2
-        weights2_reduce = F.softmax(self.betas_reduce[0:2], dim=-1)
+        weights2_reduce= [F.softmax(beta, dim=-1) for beta in self.beta_reduce[0:2]]
         for i in range(self._steps-1):
             end = start + n
-            tw2 = F.softmax(self.betas_reduce[start:end], dim=-1)
+            # tw2 = F.softmax(self.betas_reduce[start:end], dim=-1)
+            tw2 = [F.softmax(beta, dim=-1) for beta in self.beta_reduce[start:end]]
             start = end
             n += 1
             weights2_reduce = torch.cat([weights2_reduce,tw2],dim=0)
@@ -437,7 +439,7 @@ class PCSearchCNN(nn.Module):
         for k, v in self.named_parameters():
             if 'alpha' not in k:
                 yield k, v
-    
+
     def alphas(self):
         for k, v in self.named_parameters():
             if 'alpha' in k:
