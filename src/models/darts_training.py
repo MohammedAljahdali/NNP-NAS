@@ -374,27 +374,9 @@ class PCSearchCNN(nn.Module):
         weights_normal = [F.softmax(alpha, dim=-1) for alpha in self.alpha_normal]
         weights_reduce = [F.softmax(alpha, dim=-1) for alpha in self.alpha_reduce]
 
-        n = 3
-        start = 2
-        weights2_normal = [F.softmax(beta, dim=-1) for beta in self.beta_normal[0:2]]
-        for i in range(self._steps - 1):
-            end = start + n
-            # tw2 = F.softmax(self.beta_normal[start:end], dim=-1)
-            tw2 = [F.softmax(beta, dim=-1) for beta in self.beta_normal[start:end]]
-            start = end
-            n += 1
-            weights2_normal = torch.cat([weights2_normal, tw2], dim=0)
+        weights2_normal = [F.softmax(alpha, dim=-1) for alpha in self.beta_normal]
+        weights2_reduce = [F.softmax(alpha, dim=-1) for alpha in self.beta_reduce]
 
-        n = 3
-        start = 2
-        weights2_reduce= [F.softmax(beta, dim=-1) for beta in self.beta_reduce[0:2]]
-        for i in range(self._steps-1):
-            end = start + n
-            # tw2 = F.softmax(self.betas_reduce[start:end], dim=-1)
-            tw2 = [F.softmax(beta, dim=-1) for beta in self.beta_reduce[start:end]]
-            start = end
-            n += 1
-            weights2_reduce = torch.cat([weights2_reduce,tw2],dim=0)
 
         for cell in self.cells:
             weights = weights_reduce if cell.reduction else weights_normal

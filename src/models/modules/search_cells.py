@@ -94,7 +94,7 @@ class PCSearchCell(nn.Module):
 
         states = [s0, s1]
         for edges, w_list, w_edges_list in zip(self.dag, w_dag, w_edges):
-            s_cur = sum(w_edges_list * edges[i](s, w) for i, (s, w) in enumerate(zip(states, w_list)))
+            s_cur = sum(e * edges[i](s, w) for i, (s, w, e) in enumerate(zip(states, w_list, w_edges_list)))
             states.append(s_cur)
 
         s_out = torch.cat(states[2:], dim=1)
