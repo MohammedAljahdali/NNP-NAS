@@ -12,6 +12,10 @@ train_dataset:
   transform:
     _target_: torchvision.transforms.Compose
     transforms:
+      - _target_: torchvision.transforms.RandomHorizontalFlip
+      - _target_: torchvision.transforms.RandomCrop
+        size: 32
+        padding: 4
       - _target_: torchvision.transforms.ToTensor
       - _target_: torchvision.transforms.Normalize
         mean:
@@ -22,10 +26,6 @@ train_dataset:
           - 0.247
           - 0.243
           - 0.262
-      - _target_: torchvision.transforms.RandomHorizontalFlip
-      - _target_: torchvision.transforms.RandomCrop
-        size: 32
-        padding: 4
   download: ${dataset.download}
 
 val_dataset:
