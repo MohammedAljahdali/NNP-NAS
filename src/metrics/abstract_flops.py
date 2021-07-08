@@ -8,6 +8,45 @@ def dense_flops(in_neurons, out_neurons):
     return in_neurons * out_neurons
 
 
+# def _conv_flops_compute(input,
+#                         weight,
+#                         bias=None,
+#                         stride=1,
+#                         padding=0,
+#                         dilation=1,
+#                         groups=1):
+#     assert weight.shape[1] * groups == input.shape[1]
+#
+#     batch_size = input.shape[0]
+#     in_channels = input.shape[1]
+#     out_channels = weight.shape[0]
+#     kernel_dims = list(weight.shape[-2:])
+#     input_dims = list(input.shape[2:])
+#
+#     paddings = padding if type(padding) is tuple else (padding, padding)
+#     strides = stride if type(stride) is tuple else (stride, stride)
+#     dilations = dilation if type(dilation) is tuple else (dilation, dilation)
+#
+#     output_dims = [0, 0]
+#     output_dims[0] = (input_dims[0] + 2 * paddings[0] -
+#                       (dilations[0] * (kernel_dims[0] - 1) + 1)) // strides[0] + 1
+#     output_dims[1] = (input_dims[1] + 2 * paddings[1] -
+#                       (dilations[1] * (kernel_dims[1] - 1) + 1)) // strides[1] + 1
+#
+#     filters_per_channel = out_channels // groups
+#     conv_per_position_flops = int(_prod(kernel_dims)) * in_channels * filters_per_channel
+#     active_elements_count = batch_size * int(_prod(output_dims))
+#     overall_conv_flops = conv_per_position_flops * active_elements_count
+#
+#     bias_flops = 0
+#     if bias is not None:
+#         bias_flops = out_channels * active_elements_count
+#
+#     overall_flops = overall_conv_flops + bias_flops
+#
+#     return int(overall_flops)
+
+
 def conv2d_flops(in_channels, out_channels, input_shape, kernel_shape,
                  padding='same', strides=1, dilation=1):
     """Compute the number of multiply-adds used by a Conv2D layer
@@ -50,30 +89,37 @@ def conv2d_flops(in_channels, out_channels, input_shape, kernel_shape,
     assert out_channels > 0
     assert len(input_shape) == 2
     assert len(kernel_shape) == 2
-    padding = padding.lower()
-    assert padding in ('same', 'valid', 'zeros'), "Padding must be one of same|valid|zeros"
+    # padding = padding.lower()
+    padding = padding if type(padding) is tuple else (padding, padding)
     try:
         strides = tuple(strides)
     except TypeError:
         # if one number provided, make it a 2-tuple
         strides = (strides, strides)
-    assert dilation == 1 or all(d == 1 for d in dilation), "Dilation > 1 is not supported"
+    dilation = dilation if type(dilation) is tuple else (dilation, dilation)
 
     # compute output spatial shape
     # based on TF computations https://stackoverflow.com/a/37674568
-    if padding in ['same', 'zeros']:
-        out_nrows = np.ceil(float(input_shape[0]) / strides[0])
-        out_ncols = np.ceil(float(input_shape[1]) / strides[1])
-    else:  # padding == 'valid'
-        out_nrows = np.ceil((input_shape[0] - kernel_shape[0] + 1) / strides[0])  # noqa
-        out_ncols = np.ceil((input_shape[1] - kernel_shape[1] + 1) / strides[1])  # noqa
-    output_shape = (int(out_nrows), int(out_ncols))
+    # if padding in ['same', 'zeros']:
+    #     out_nrows = np.ceil(float(input_shape[0]) / strides[0])
+    #     out_ncols = np.ceil(float(input_shape[1]) / strides[1])
+    # else:  # padding == 'valid'
+    #     out_nrows = np.ceil((input_shape[0] - kernel_shape[0] + 1) / strides[0])  # noqa
+    #     out_ncols = np.ceil((input_shape[1] - kernel_shape[1] + 1) / strides[1])  # noqa
+
+    output_dims = [0, 0]
+    output_dims[0] = (input_shape[0] + 2 * padding[0] -
+                      (dilation[0] * (kernel_shape[0] - 1) + 1)) // strides[0] + 1
+    output_dims[1] = (input_shape[1] + 2 * padding[1] -
+                      (dilation[1] * (kernel_shape[1] - 1) + 1)) // strides[1] + 1
+
+    # output_shape = (int(out_nrows), int(out_ncols))
 
     # work to compute one output spatial position
     nflops = in_channels * out_channels * int(np.prod(kernel_shape))
 
     # total work = work per output position * number of output positions
-    return nflops * int(np.prod(output_shape))
+    return nflops * int(np.prod(output_dims))
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ def _conv2d_flops(module, activation):
                         out_channels=module.out_channels,
                         input_shape=input_shape,
                         kernel_shape=module.kernel_size,
-                        padding=module.padding_mode,
+                        padding=module.padding,
                         strides=module.stride,
                         dilation=module.dilation)
 
