@@ -3,8 +3,11 @@
 
 from collections import OrderedDict, defaultdict
 
+import numpy
 import torch
 from torch import nn
+from detectron2.structures.image_list import ImageList
+from detectron2.structures.instances import Instances
 
 
 def hook_applyfn(hook, model, forward=False, backward=False):
@@ -74,9 +77,96 @@ def get_activations(model, input):
             return
         assert module not in activations, \
             f"{module} already in activations"
-        # TODO [0] means first input, not all models have a single input
-        activations[module] = (input[0].detach().cpu().numpy().copy(),
-                               output.detach().cpu().numpy().copy(),)
+        # TODO: Deal with the segmentation models correctly
+        # if isinstance(output, torch.Tensor):
+        #     output_data = output
+        # elif isinstance(output, dict):
+        #     output_data = list(output.values())[0]
+        # elif isinstance(output, list):
+        #     output_data = output[0].tensor
+        # elif isinstance(output, tuple):
+        #     output_data = output[0][0]
+        # else:
+        #     print(output)
+        #     print(type(output))
+        #     for t in output:
+        #         try:
+        #             print(t.shape)
+        #         except:
+        #             pass
+        #         print('t', type(t))
+        #         for tt in t:
+        #             print('tt', type(tt))
+        #             try:
+        #                 print(tt.shape)
+        #             except:
+        #                 pass
+        #             for ttt in tt:
+        #                 print('ttt', type(ttt))
+        #                 try:
+        #                     print(ttt.shape)
+        #                 except:
+        #                     pass
+        #     raise ValueError()
+        #
+        # if isinstance(input[0], torch.Tensor):
+        #     input_data = input[0]
+        # elif isinstance(input[0], dict):
+        #     input_data = input[0]['image']
+        # elif isinstance(input[0], list) or isinstance(input[0], ImageList):
+        #     input_data = input[0][0]
+        # else:
+        #     print(input[0])
+        #     print(type(input[0]))
+        #     for t in input[0]:
+        #         try:
+        #             print(t.shape)
+        #         except:
+        #             pass
+        #         print('t', type(t))
+        #         for tt in t:
+        #             print('tt', type(tt))
+        #             try:
+        #                 print(tt.shape)
+        #             except:
+        #                 pass
+        #             for ttt in tt:
+        #                 print('ttt', type(ttt))
+        #                 try:
+        #                     print(ttt.shape)
+        #                 except:
+        #                     pass
+        #                 break
+        #             break
+        #         break
+        #
+        #     raise ValueError()
+        #
+        # if isinstance(output_data, Instances):
+        #     output_data = output_data.get('objectness_logits')
+        #     output_data = output_data.detach().cpu().numpy().copy()
+        # elif isinstance(output_data, torch.Tensor):
+        #     output_data = output_data.detach().cpu().numpy().copy()
+        # elif not isinstance(output_data, torch.Tensor):
+        #     print(f"Input data type {type(input_data)} --- Output data type {type(output_data)}")
+        #     print(output_data)
+        #     try:
+        #         print(output_data.get('objectness_logits'))
+        #     except:
+        #         pass
+        # if isinstance(input_data, torch.Tensor):
+        #     input_data = input_data.detach().cpu().numpy().copy()
+        # elif not isinstance(input_data, torch.Tensor):
+        #     # raise ValueError()
+        #     print(f"Input data type {type(input_data)} --- Output data type {type(output_data)}")
+        #     print(input_data)
+        #     try:
+        #         print(input_data)
+        #     except:
+        #         pass
+
+        activations[module] = (input_data, output_data,)
+
 
     fn, hooks = hook_applyfn(store_activations, model, forward=True)
     model.apply(fn)

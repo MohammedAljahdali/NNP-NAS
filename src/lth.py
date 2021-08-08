@@ -16,6 +16,7 @@ from src.utils import utils
 from pytorch_lightning.utilities.distributed import rank_zero_only
 from torch import nn
 from src.metrics import flops
+from detectron2.modeling.meta_arch.rcnn import GeneralizedRCNN
 
 _PARAM_TUPLE = Tuple[nn.Module, str]
 _PARAM_LIST = Union[List[_PARAM_TUPLE], Tuple[_PARAM_TUPLE]]
@@ -74,8 +75,14 @@ class MyModelPruning(ModelPruning):
         # TODO: Make it general to support multiple loggers
         self.logger = pl_module.logger
         self.module = pl_module.module
-        self.x, y = next(iter(trainer.datamodule.train_dataloader()))
-        self.x = self.x.to(pl_module.device)
+        self.x, _ = next(iter(trainer.datamodule.train_dataloader()))
+        if isinstance(self.x, torch.Tensor):
+            self.x = self.x.to(pl_module.device)
+        elif isinstance(self.x, dict):
+            self.x['image'] = self.x['image'].to(pl_module.device)
+            self.x = [self.x]
+        else:
+            raise ValueError()
         log.debug("BEFORE")
         log.debug([self._get_pruned_stats(m, n) for m, n in self._parameters_to_prune])
         log.debug("END OF BEFORE")
@@ -111,11 +118,12 @@ class MyModelPruning(ModelPruning):
                     total_params - curr_total_zeros)
 
         # FLOPS
-
-        ops, ops_nz = flops(self.module, self.x)
-        self.logger.experiment[0].summary[f"level-{self.level}/flops"] = ops
-        self.logger.experiment[0].summary[f"level-{self.level}/flops_nz"] = ops_nz
-        self.logger.experiment[0].summary[f"level-{self.level}/theoretical_speedup"] = ops / ops_nz
+        # Segmentation task flops calculation is not implemented yet
+        if not isinstance(self.module, GeneralizedRCNN):
+            ops, ops_nz = flops(self.module, self.x)
+            self.logger.experiment[0].summary[f"level-{self.level}/flops"] = ops
+            self.logger.experiment[0].summary[f"level-{self.level}/flops_nz"] = ops_nz
+            self.logger.experiment[0].summary[f"level-{self.level}/theoretical_speedup"] = ops / ops_nz
 
         if self._verbose == 2:
             for i, (module, name) in enumerate(self._parameters_to_prune):
@@ -160,9 +168,10 @@ def lth(cfg: DictConfig, N, amount) -> Optional[float]:
     log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule, dataset=cfg.dataset,
                                                               _recursive_=False, )
-
+    datamodule.prepare_data()
+    datamodule.setup()
     # Init Lightning model
-    log.info(f"Instantiating model <{cfg.model._target_}> with <{cfg.model.optim.keys()}> optimizer")
+    log.info(f"Instantiating model <{cfg.model._target_}> ")
     model: LightningModule = hydra.utils.instantiate(
         cfg.model, _recursive_=False,
     )
@@ -235,9 +244,8 @@ def lth(cfg: DictConfig, N, amount) -> Optional[float]:
     trainer.test(ckpt_path='best')
 
     log.info("Starting testing level 0 After Pruning!")
-    trainer.test(ckpt_path=None)
-    # Now do the loop
-    # TODO: modify the checkpoint callback save dir, to save models of different iterations on different folders
+    trainer.test(ckpt_path=None, model=model)
+    # # TODO: modify the checkpoint callback save dir, to save models of different iterations on different folders
     for i in range(1, N):
         # Init Lightning callbacks
         callbacks: List[Callback] = []
@@ -277,7 +285,7 @@ def lth(cfg: DictConfig, N, amount) -> Optional[float]:
         if i == N - 1:
             continue
         log.info(f"Starting testing level {i} After Pruning!")
-        trainer.test(ckpt_path=None)
+        trainer.test(ckpt_path=None, model=model)
 
     log.info("Finalizing!")
     utils.finish(

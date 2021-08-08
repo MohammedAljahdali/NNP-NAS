@@ -1,0 +1,73 @@
+target: src.models.maskrcnn_benchmark.data.datasets.coco.COCODataset
+dir: ./tmp
+
+train_dataset:
+  _target_: ${dataset.target}
+  root: ${dataset.dir}/coco/data/train2014
+  ann_file: ${dataset.dir}/coco/data/annotations/instances_train2014.json
+  remove_images_without_annotations: True
+  transforms:
+    _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.Compose
+    transforms:
+      - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.Reize
+        min_size: 800
+        max_size: 1333
+      - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.RandomHorizontalFlip
+        prob: 0.5
+      - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.ToTensor
+      - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.Normalize
+        mean:
+          - 102.9801
+          - 115.9465
+          - 122.7717
+        std:
+          - 1
+          - 1
+          - 1
+        to_bgr255: True
+
+val_dataset:
+  _target_: ${dataset.target}
+  root: ${dataset.dir}/coco/data/val2014
+  ann_file: ${dataset.dir}/coco/data/annotations/instances_minival2014.json
+  remove_images_without_annotations: True
+  transforms:
+    - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.Reize
+      min_size: 800
+      max_size: 1333
+    - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.RandomHorizontalFlip
+      prob: 0
+    - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.ToTensor
+    - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.Normalize
+      mean:
+        - 102.9801
+        - 115.9465
+        - 122.7717
+      std:
+        - 1
+        - 1
+        - 1
+      to_bgr255: True
+
+test_dataset:
+  _target_: ${dataset.target}
+  root: ${dataset.dir}/coco/data/val2014
+  ann_file: ${dataset.dir}/coco/data/annotations/instances_valminusminival2014.json
+  remove_images_without_annotations: True
+  transforms:
+    - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.Reize
+      min_size: 800
+      max_size: 1333
+    - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.RandomHorizontalFlip
+      prob: 0
+    - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.ToTensor
+    - _target_: src.models.maskrcnn_benchmark.data.transforms.transforms.Normalize
+      mean:
+        - 102.9801
+        - 115.9465
+        - 122.7717
+      std:
+        - 1
+        - 1
+        - 1
+      to_bgr255: True

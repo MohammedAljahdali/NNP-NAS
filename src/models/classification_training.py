@@ -76,7 +76,7 @@ class ClassificationTraining(LightningModule):
         return loss, logits, preds, y
 
     def training_step(self, batch: Any, batch_idx: int):
-        loss, logits, preds, targets = self.step(batch)
+        loss, logits, _, targets = self.step(batch)
 
         run_id = self.hparams.run_id + '/train' if self.hparams.run_id else 'train'
         # log train metrics
@@ -95,14 +95,14 @@ class ClassificationTraining(LightningModule):
         # we can return here dict with any tensors
         # and then read it in some callback or in training_epoch_end() below
         # remember to always return loss from training_step, or else backpropagation will fail!
-        return {"loss": loss, "preds": preds, "targets": targets}
+        return {"loss": loss}
 
     def training_epoch_end(self, outputs: List[Any]):
         # `outputs` is a list of dicts returned from `training_step()`
         pass
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, logits, preds, targets = self.step(batch)
+        loss, logits, _, targets = self.step(batch)
 
         run_id = self.hparams.run_id + '/val' if self.hparams.run_id else 'val'
         # log val metrics
@@ -118,7 +118,7 @@ class ClassificationTraining(LightningModule):
         self.log(f"{run_id}/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
         self.log(f"{run_id}/acc5", acc5, on_step=False, on_epoch=True, prog_bar=True)
 
-        return {"loss": loss, "preds": preds, "targets": targets}
+        return {"loss": loss}
 
     def validation_epoch_end(self, outputs: List[Any]):
         pass
@@ -147,7 +147,6 @@ class ClassificationTraining(LightningModule):
         See examples here:
             https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html#configure-optimizers
         """
-        next(iter(self.hparams.optim.values()))
         return instantiate(next(iter(self.hparams.optim.values())), params=self.module.parameters(), _convert_="partial")
 
     def on_fit_end(self) -> None:
