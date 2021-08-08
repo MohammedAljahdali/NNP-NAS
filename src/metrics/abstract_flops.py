@@ -106,7 +106,7 @@ def conv2d_flops(in_channels, out_channels, input_shape, kernel_shape,
     # else:  # padding == 'valid'
     #     out_nrows = np.ceil((input_shape[0] - kernel_shape[0] + 1) / strides[0])  # noqa
     #     out_ncols = np.ceil((input_shape[1] - kernel_shape[1] + 1) / strides[1])  # noqa
-
+    # src: https://deepspeed.readthedocs.io/en/latest/_modules/deepspeed/profiling/flops_profiler/profiler.html
     output_dims = [0, 0]
     output_dims[0] = (input_shape[0] + 2 * padding[0] -
                       (dilation[0] * (kernel_shape[0] - 1) + 1)) // strides[0] + 1
