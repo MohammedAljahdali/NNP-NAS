@@ -1,11 +1,10 @@
 #!/bin/bash --login
 #SBATCH -N 1
 #SBATCH --partition=batch
-#SBATCH --time=48:00:00
+#SBATCH --time=12:00:00
 #SBATCH --mem=64G
-#SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=6
-#SBATCH --constraint=[v100]
+#SBATCH --gres=gpu:v100:1
+#SBATCH --cpus-per-task=12
 #SBATCH --output=logs/slurm/%j-%x-slurm.out
 #SBATCH --error=logs/slurm/%j-%x-slurm.err
 
@@ -14,7 +13,7 @@ set -e
 
 # activate the conda environment
 module purge
-conda activate sb-env
+conda activate nnp-nas-2
 
 # use srun to launch NVDashboard server in order to reserve a port
 # srun --resv-ports=1 ./bin/launch-nvdashboard-server.srun &
