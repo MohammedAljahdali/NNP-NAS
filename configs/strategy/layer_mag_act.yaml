@@ -1,0 +1,5 @@
+_target_: src.strategies.magnitude.LayerMagAct
+#model: ???
+#input: ???
+#output: ???
+compression: 1

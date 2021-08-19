@@ -1,0 +1,25 @@
+#root: str, train: bool = True, transform: Optional[Callable] = None, target_transform: Optional[Callable] = None, download: bool = False
+target: torchvision.datasets.MNIST
+root: ${work_dir}/tmp/data
+transform:
+  _target_: torchvision.transforms.Compose
+  transforms:
+    - _target_: torchvision.transforms.ToTensor
+    - _target_: torchvision.transforms.Normalize
+      mean: 0.1307
+      std: 0.3081
+download: True
+
+train_dataset:
+  _target_: ${dataset.target}
+  root: ${dataset.root}
+  train: True
+  transform: ${dataset.transform}
+  download: ${dataset.download}
+
+val_dataset:
+  _target_: ${dataset.target}
+  root: ${dataset.root}
+  train: False
+  transform: ${dataset.transform}
+  download: ${dataset.download}

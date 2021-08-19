@@ -1,0 +1,132 @@
+MODEL:
+  META_ARCHITECTURE: "GeneralizedRCNN"
+  MASK_ON: True
+  RETINANET_ON: False
+  RPN_ONLY:  False
+#  WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
+  BACKBONE:
+    CONV_BODY: "R-50-C4"
+    FREEZE_CONV_BODY_AT: -1
+  RESNETS:
+    NUM_GROUPS: 1
+    WIDTH_PER_GROUP: 64
+    STRIDE_IN_1X1: True
+    TRANS_FUNC: "BottleneckWithFixedBatchNorm"
+    STEM_FUNC: "StemWithFixedBatchNorm"
+    RES5_DILATION: 1
+    BACKBONE_OUT_CHANNELS: 1024
+    RES2_OUT_CHANNELS: 256
+    STEM_OUT_CHANNELS: 64
+    STAGE_WITH_DCN: (False, False, False, False)
+    WITH_MODULATED_DCN: False
+    DEFORMABLE_GROUPS: 1
+  RPN:
+    PRE_NMS_TOP_N_TEST: 6000
+    POST_NMS_TOP_N_TEST: 1000
+    USE_FPN:
+      False
+    ANCHOR_SIZES:
+      - 32
+      - 64
+      - 128
+      - 256
+      - 512
+    ANCHOR_STRIDE:
+      - 16
+    ASPECT_RATIOS: 
+      - 0.5
+      - 1.0
+      - 2.0
+    STRADDLE_THRESH: 0
+    FG_IOU_THRESHOLD: 0.7
+    BG_IOU_THRESHOLD: 0.3
+    BATCH_SIZE_PER_IMAGE: 256
+    POSITIVE_FRACTION: 0.5
+    PRE_NMS_TOP_N_TRAIN: 12000
+    POST_NMS_TOP_N_TRAIN: 2000
+    NMS_THRESH: 0.7
+    MIN_SIZE: 0
+    FPN_POST_NMS_TOP_N_TRAIN: 2000
+    FPN_POST_NMS_TOP_N_TEST: 2000
+    RPN_HEAD: "SingleConvRPNHead"
+    FPN_POST_NMS_PER_BATCH: True
+  ROI_BOX_HEAD:
+    FEATURE_EXTRACTOR: "ResNet50Conv5ROIFeatureExtractor"
+    PREDICTOR: "FastRCNNPredictor"
+    POOLER_RESOLUTION: 14
+    POOLER_SAMPLING_RATIO: 0
+    POOLER_SCALES:
+      - 1.0 / 16
+    NUM_CLASSES: 81
+    MLP_HEAD_DIM: 1024
+    USE_GN: False
+    DILATION: 1
+    CONV_HEAD_DIM: 256
+    NUM_STACKED_CONVS: 4
+  ROI_MASK_HEAD:
+    PREDICTOR: "MaskRCNNC4Predictor"
+    SHARE_BOX_FEATURE_EXTRACTOR: True
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+
+  # ---------------------------------------------------------------------------- #
+  # ROI HEADS options
+  # ---------------------------------------------------------------------------- #
+  _C.MODEL.ROI_HEADS: CN()
+  _C.MODEL.ROI_HEADS.USE_FPN: False
+  # Overlap threshold for an RoI to be considered foreground (if >= FG_IOU_THRESHOLD)
+  _C.MODEL.ROI_HEADS.FG_IOU_THRESHOLD: 0.5
+  # Overlap threshold for an RoI to be considered background
+  # (class: 0 if overlap in [0, BG_IOU_THRESHOLD))
+  _C.MODEL.ROI_HEADS.BG_IOU_THRESHOLD: 0.5
+  # Default weights on (dx, dy, dw, dh) for normalizing bbox regression targets
+  # These are empirically chosen to approximately lead to unit variance targets
+  _C.MODEL.ROI_HEADS.BBOX_REG_WEIGHTS: (10., 10., 5., 5.)
+  # RoI minibatch size *per image* (number of regions of interest [ROIs])
+  # Total number of RoIs per training minibatch:
+  #   TRAIN.BATCH_SIZE_PER_IM * TRAIN.IMS_PER_BATCH * NUM_GPUS
+  # E.g., a common configuration is: 512 * 2 * 8: 8192
+  _C.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE: 512
+  # Target fraction of RoI minibatch that is labeled foreground (i.e. class > 0)
+  _C.MODEL.ROI_HEADS.POSITIVE_FRACTION: 0.25

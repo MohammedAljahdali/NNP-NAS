@@ -1,0 +1,69 @@
+# @package _global_
+
+# to execute this experiment run:
+# python run.py experiment=lth_exp.yaml
+
+
+# python run.py lth.use=True model=classification_training logger=wandb dataset=cifar10
+# model/module=cifar_resnet model.training=True datamodule.batch_size=64
+# lth.N=4 trainer.max_epochs=100
+# callbacks.early_stopping.patience=2 model.module.cifar_resnet.pretrained=False datamodule.split=0.8
+defaults:
+#  - override /trainer: minimal.yaml # choose trainer from 'configs/trainer/'
+  - override /model: classification_training.yaml
+  - override /model/module: cifar_resnet
+  - override /callbacks: default.yaml
+  - override /logger: wandb.yaml
+  - override /dataset: cifar100.yaml
+  - override /run_type: lth.yaml
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+seed: 12344
+
+logger:
+  wandb:
+    project: NNP-NAS
+    job_type: NNP
+    tags:
+      - lth
+      - mag-pruning
+      - cifar100
+      - resnet110
+      - amount=0.5
+
+trainer:
+  min_epochs: 1
+  max_epochs: 300
+  gpus: 1
+  benchmark: True
+
+model:
+  module:
+    cifar_resnet:
+      pretrained: False
+      name: resnet110
+      num_classes: 100
+  optim:
+    sgd:
+      nesterov: False
+
+dataset:
+  root: /tmp/data
+
+callbacks:
+  early_stopping:
+    patience: 10
+
+
+datamodule:
+  batch_size: 128
+  split: 0.8
+  num_workers: 6
+  prefetch_factor: 32
+
+run_type:
+  N: 20
+  amount: 0.5
+

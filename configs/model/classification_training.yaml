@@ -1,0 +1,7 @@
+_target_: src.models.classification_training.ClassificationTraining
+training: True
+pruning: False
+
+defaults:
+  - module: mnist_net
+  - optim: sgd

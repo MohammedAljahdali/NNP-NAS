@@ -1,0 +1,7 @@
+adam:
+  _target_: torch.optim.Adam
+  lr: 0.0001
+  weight_decay: 0.0001
+  betas:
+    - 0.5
+    - 0.999

@@ -1,0 +1,5 @@
+_target_: src.datamodules.seg_dm.SegmentationDataModule
+batch_size: 64
+num_workers: 0
+dir: /tmp
+instance: True
